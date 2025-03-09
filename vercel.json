@@ -20,9 +20,5 @@
       "src": "/(.*)",
       "dest": "/build/$1"
     }
-  ],
-  "env": {
-    "NOTION_API_KEY": "@notion_api_key",
-    "NOTION_DATABASE_ID": "@notion_database_id"
-  }
+  ]
 } 

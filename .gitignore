@@ -6,9 +6,6 @@
 # 테스트
 /coverage
 
-# 빌드
-/build
-
 # 환경 변수
 .env
 .env.local

@@ -22,7 +22,7 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.11.16",
     "@mui/material": "^5.13.0",
-    "@mui/x-date-pickers": "^6.18.5",
+    "@mui/x-date-pickers": "^7.27.3",
     "@notionhq/client": "^2.2.16",
     "concurrently": "^8.2.2",
     "cors": "^2.8.5",

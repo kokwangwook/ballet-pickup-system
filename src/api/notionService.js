@@ -1,8 +1,8 @@
 import { Client } from '@notionhq/client';
 
 // 노션 API 키와 데이터베이스 ID 설정
-const NOTION_API_KEY = 'ntn_i76479275898o0IU5KP3rbuEVr0Kfx1CTgn8dyx0FcqdId';
-const NOTION_DATABASE_ID = '1b11c7da1d258012980cf270bd4ad98d';
+const NOTION_API_KEY = process.env.NOTION_API_KEY;
+const NOTION_DATABASE_ID = process.env.NOTION_DATABASE_ID;
 
 // 노션 클라이언트 초기화
 const notion = new Client({ 
@@ -32,10 +32,15 @@ const notion = new Client({
  */
 export const fetchStudentsFromNotion = async () => {
   try {
-    const response = await fetch('/api/students');
+    // 배포 환경에서도 작동하도록 URL을 완전한 경로로 구성
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/api/students`;
+    console.log("API 호출 URL:", url);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error('서버 응답이 올바르지 않습니다.');
+      throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
     }
     
     const data = await response.json();
@@ -51,7 +56,12 @@ export const fetchStudentsFromNotion = async () => {
  */
 export const updateStudentStatusInNotion = async (pageId, property, status) => {
   try {
-    const response = await fetch('/api/update-status', {
+    // 배포 환경에서도 작동하도록 URL을 완전한 경로로 구성
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/api/update-status`;
+    console.log("상태 업데이트 API 호출 URL:", url);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -64,7 +74,7 @@ export const updateStudentStatusInNotion = async (pageId, property, status) => {
     });
     
     if (!response.ok) {
-      throw new Error('서버 응답이 올바르지 않습니다.');
+      throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
     }
     
     const data = await response.json();
@@ -80,10 +90,15 @@ export const updateStudentStatusInNotion = async (pageId, property, status) => {
  */
 export const fetchClassInfoFromNotion = async () => {
   try {
-    const response = await fetch('/api/class-info');
+    // 배포 환경에서도 작동하도록 URL을 완전한 경로로 구성
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/api/class-info`;
+    console.log("수업 정보 API 호출 URL:", url);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error('서버 응답이 올바르지 않습니다.');
+      throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
     }
     
     const data = await response.json();

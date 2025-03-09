@@ -15,11 +15,22 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'build')));
 
 // 노션 클라이언트 설정
-const notion = new Client({
-  auth: process.env.NOTION_API_KEY
-});
-
+const NOTION_API_KEY = process.env.NOTION_API_KEY;
 const DATABASE_ID = process.env.NOTION_DATABASE_ID;
+
+console.log('환경 변수 확인:');
+console.log('NOTION_API_KEY 존재 여부:', !!NOTION_API_KEY);
+console.log('NOTION_API_KEY 길이:', NOTION_API_KEY ? NOTION_API_KEY.length : 0);
+console.log('NOTION_DATABASE_ID 존재 여부:', !!DATABASE_ID);
+console.log('NOTION_DATABASE_ID 길이:', DATABASE_ID ? DATABASE_ID.length : 0);
+
+if (!NOTION_API_KEY || !DATABASE_ID) {
+  console.error('경고: Notion API 키 또는 데이터베이스 ID가 설정되지 않았습니다!');
+}
+
+const notion = new Client({
+  auth: NOTION_API_KEY
+});
 
 // 학생 목록 가져오기
 app.get('/api/students', async (req, res) => {

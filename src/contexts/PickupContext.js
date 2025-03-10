@@ -72,29 +72,28 @@ export const PickupProvider = ({ children }) => {
   
   // 요일에 따라 학생 필터링
   const filterStudentsByDay = (dayIndex, studentList) => {
-    // 요일별 수업 필터링 로직 구현
-    // 예: 월요일(1)에는 특정 수업만 표시
-    const dayClassMap = {
-      0: ['일요일반'], // 일요일
-      1: ['3:40', '4:40', '5:40', '6:40'], // 월요일
-      2: ['3:40', '4:40', '5:40', '6:40'], // 화요일
-      3: ['3:40', '4:40', '5:40', '6:40'], // 수요일
-      4: ['3:40', '4:40', '5:40', '6:40'], // 목요일
-      5: ['3:40', '4:40', '5:40', '6:40'], // 금요일
-      6: ['토요일반'] // 토요일
-    };
+    console.log(`요일별 필터링: ${getDayName(dayIndex)}요일, 전체 학생 수: ${studentList.length}`);
     
-    // 해당 요일에 수업이 있는 학생만 필터링
-    const filteredStudents = studentList.filter(student => {
-      return student.classes.some(classTime => {
-        // 수업 시간이 해당 요일의 수업 목록에 포함되어 있는지 확인
-        // 또는 수업 시간에 요일 정보가 포함되어 있는지 확인
-        return dayClassMap[dayIndex].includes(classTime) || 
-               classTime.includes(getDayName(dayIndex));
+    // 실제 데이터 확인을 위한 로깅
+    if (studentList.length > 0) {
+      console.log('첫 번째 학생의 수업 시간:', studentList[0].classes);
+    }
+    
+    // 모든 학생 데이터 표시 (임시 조치)
+    setStudents(studentList);
+    
+    // 실제 모든 수업 시간 확인
+    const allClassTimes = new Set();
+    studentList.forEach(student => {
+      student.classes.forEach(classTime => {
+        allClassTimes.add(classTime);
       });
     });
     
-    setStudents(filteredStudents);
+    console.log('모든 수업 시간 목록:', Array.from(allClassTimes));
+    
+    // TODO: 모든 수업 시간을 확인한 후, 요일별 매핑을 업데이트합니다.
+    // 현재는 임시로 모든 학생을 표시하도록 합니다.
   };
   
   // 시간 계산 함수

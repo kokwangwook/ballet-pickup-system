@@ -306,7 +306,7 @@ const StudentTable = () => {
         
         {classGroups.length === 0 && (
           <Alert severity="info">
-            선택한 요일에 등록된 학생이 없습니다.
+            선택한 요일({getDayName(selectedDayOfWeek)}요일)에 등록된 학생이 없습니다.
           </Alert>
         )}
       </Container>

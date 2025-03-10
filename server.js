@@ -170,18 +170,20 @@ app.post('/api/students', (req, res) => {
     const studentToAdd = {
       id: newId,
       name: newStudent.name,
-      shortId: newShortId,
+      shortId: newStudent.shortId || newShortId,
       classTime: newStudent.classTime,
       classes: [newStudent.classTime],
-      arrivalTime: newStudent.arrivalTime || '', 
-      departureTime: newStudent.departureTime || '',
       arrivalLocation: newStudent.arrivalLocation || '',
       departureLocation: newStudent.departureLocation || '',
       arrivalStatus: false,
       departureStatus: false,
-      isActive: true,
-      registrationType: newStudent.registrationType || '정회원',
-      phoneNumber: newStudent.phoneNumber || ''
+      isActive: newStudent.isActive !== undefined ? newStudent.isActive : true,
+      motherPhone: newStudent.motherPhone || '',
+      fatherPhone: newStudent.fatherPhone || '',
+      studentPhone: newStudent.studentPhone || '',
+      otherPhone: newStudent.otherPhone || '',
+      classDays: newStudent.classDays || [],
+      registrationDate: newStudent.registrationDate || null
     };
     
     // 학생 추가

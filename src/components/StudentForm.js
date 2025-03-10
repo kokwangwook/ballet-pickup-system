@@ -11,21 +11,43 @@ import {
   FormControl, 
   InputLabel,
   Snackbar,
-  Alert
+  Alert,
+  Checkbox,
+  ListItemText,
+  FormHelperText,
+  OutlinedInput
 } from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+import { ko } from 'date-fns/locale';
 import { usePickup } from '../contexts/PickupContext';
+
+const ITEM_HEIGHT = 48;
+const ITEM_PADDING_TOP = 8;
+const MenuProps = {
+  PaperProps: {
+    style: {
+      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+      width: 250,
+    },
+  },
+};
 
 const StudentForm = ({ student, onClose, isEdit = false }) => {
   const { classInfo, addStudent, updateStudent } = usePickup();
   const [formData, setFormData] = useState({
     name: '',
+    shortId: '',
     classTime: '',
-    arrivalTime: '',
-    departureTime: '',
     arrivalLocation: '',
     departureLocation: '',
-    registrationType: '정회원',
-    phoneNumber: ''
+    motherPhone: '',
+    studentPhone: '',
+    classDays: [],
+    registrationDate: null,
+    fatherPhone: '',
+    otherPhone: '',
+    isActive: true
   });
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
@@ -36,13 +58,17 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     if (isEdit && student) {
       setFormData({
         name: student.name || '',
+        shortId: student.shortId || '',
         classTime: student.classTime || '',
-        arrivalTime: student.arrivalTime || '',
-        departureTime: student.departureTime || '',
         arrivalLocation: student.arrivalLocation || '',
         departureLocation: student.departureLocation || '',
-        registrationType: student.registrationType || '정회원',
-        phoneNumber: student.phoneNumber || ''
+        motherPhone: student.motherPhone || '',
+        studentPhone: student.studentPhone || '',
+        classDays: student.classDays || [],
+        registrationDate: student.registrationDate ? new Date(student.registrationDate) : null,
+        fatherPhone: student.fatherPhone || '',
+        otherPhone: student.otherPhone || '',
+        isActive: student.isActive !== undefined ? student.isActive : true
       });
     }
   }, [isEdit, student]);
@@ -64,24 +90,43 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     }
   };
 
-  // 클래스 시간 변경 시 도착/출발 시간 자동 설정
-  const handleClassTimeChange = (e) => {
-    const { value } = e.target;
-    if (value && classInfo[value]) {
-      const classTimeObj = classInfo[value];
-      const arrivalTime = parseFloat(value) - 0.67; // 약 40분 전
-      const departureTime = parseFloat(classTimeObj.endTime) - 0.17; // 약 10분 전
-      
+  // 날짜 변경 핸들러
+  const handleDateChange = (date) => {
+    setFormData({
+      ...formData,
+      registrationDate: date
+    });
+  };
+
+  // 다중 선택 핸들러
+  const handleMultiSelectChange = (event) => {
+    const { target: { value } } = event;
+    setFormData({
+      ...formData,
+      classDays: typeof value === 'string' ? value.split(',') : value,
+    });
+  };
+
+  // 숫자만 입력 핸들러
+  const handleNumberInput = (e) => {
+    const { name, value } = e.target;
+    // 숫자만 허용
+    if (/^\d*$/.test(value)) {
       setFormData({
         ...formData,
-        classTime: value,
-        arrivalTime: arrivalTime.toFixed(2),
-        departureTime: departureTime.toFixed(2)
+        [name]: value
       });
-    } else {
+    }
+  };
+
+  // 전화번호 형식 핸들러
+  const handlePhoneInput = (e) => {
+    const { name, value } = e.target;
+    // 숫자와 하이픈만 허용
+    if (/^[\d-]*$/.test(value)) {
       setFormData({
         ...formData,
-        classTime: value
+        [name]: value
       });
     }
   };
@@ -94,6 +139,8 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = '이름은 필수입니다';
     if (!formData.classTime) newErrors.classTime = '수업 시간은 필수입니다';
+    if (!formData.shortId) newErrors.shortId = '단축번호는 필수입니다';
+    if (!formData.classDays || formData.classDays.length === 0) newErrors.classDays = '수업요일을 선택해주세요';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -101,26 +148,35 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     }
     
     try {
+      const dataToSubmit = {
+        ...formData,
+        registrationDate: formData.registrationDate ? formData.registrationDate.toISOString() : null
+      };
+      
       if (isEdit) {
         // 학생 정보 수정
-        await updateStudent(student.id, formData);
+        await updateStudent(student.id, dataToSubmit);
         setSuccess(true);
         setTimeout(() => {
           if (onClose) onClose();
         }, 1500);
       } else {
         // 새 학생 등록
-        await addStudent(formData);
+        await addStudent(dataToSubmit);
         setSuccess(true);
         setFormData({
           name: '',
+          shortId: '',
           classTime: '',
-          arrivalTime: '',
-          departureTime: '',
           arrivalLocation: '',
           departureLocation: '',
-          registrationType: '정회원',
-          phoneNumber: ''
+          motherPhone: '',
+          studentPhone: '',
+          classDays: [],
+          registrationDate: null,
+          fatherPhone: '',
+          otherPhone: '',
+          isActive: true
         });
         setTimeout(() => {
           if (onClose) onClose();
@@ -132,7 +188,7 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     }
   };
 
-  // 이미지에서 확인된 시간 옵션들
+  // 수업 시간 옵션
   const classTimeOptions = [
     '15:30',
     '16:30',
@@ -140,6 +196,9 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     '18:30',
     '19:30'
   ];
+
+  // 수업 요일 옵션
+  const dayOptions = ['월', '화', '수', '목', '금'];
 
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
@@ -149,6 +208,13 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
       
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Grid container spacing={2}>
+          {/* 기본 정보 섹션 */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" color="primary" gutterBottom>
+              기본 정보
+            </Typography>
+          </Grid>
+
           <Grid item xs={12} sm={6}>
             <TextField
               margin="normal"
@@ -165,6 +231,22 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
           </Grid>
           
           <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="shortId"
+              label="단축번호"
+              name="shortId"
+              value={formData.shortId}
+              onChange={handleNumberInput}
+              error={!!errors.shortId}
+              helperText={errors.shortId}
+              inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
             <FormControl fullWidth margin="normal" required error={!!errors.classTime}>
               <InputLabel id="classTime-label">수업 시간</InputLabel>
               <Select
@@ -172,7 +254,7 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
                 id="classTime"
                 name="classTime"
                 value={formData.classTime}
-                onChange={handleClassTimeChange}
+                onChange={handleChange}
                 label="수업 시간"
               >
                 {classTimeOptions.map((time) => (
@@ -180,9 +262,34 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
                 ))}
               </Select>
               {errors.classTime && (
-                <Typography variant="caption" color="error">
-                  {errors.classTime}
-                </Typography>
+                <FormHelperText>{errors.classTime}</FormHelperText>
+              )}
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth margin="normal" required error={!!errors.classDays}>
+              <InputLabel id="classDays-label">수업 요일</InputLabel>
+              <Select
+                labelId="classDays-label"
+                id="classDays"
+                name="classDays"
+                multiple
+                value={formData.classDays}
+                onChange={handleMultiSelectChange}
+                input={<OutlinedInput label="수업 요일" />}
+                renderValue={(selected) => selected.join(', ')}
+                MenuProps={MenuProps}
+              >
+                {dayOptions.map((day) => (
+                  <MenuItem key={day} value={day}>
+                    <Checkbox checked={formData.classDays.indexOf(day) > -1} />
+                    <ListItemText primary={day} />
+                  </MenuItem>
+                ))}
+              </Select>
+              {errors.classDays && (
+                <FormHelperText>{errors.classDays}</FormHelperText>
               )}
             </FormControl>
           </Grid>
@@ -191,42 +298,67 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
             <TextField
               margin="normal"
               fullWidth
-              id="phoneNumber"
-              label="전화번호"
-              name="phoneNumber"
+              id="arrivalLocation"
+              label="픽업 위치"
+              name="arrivalLocation"
+              value={formData.arrivalLocation}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="departureLocation"
+              label="하원 위치"
+              name="departureLocation"
+              value={formData.departureLocation}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+              <DatePicker
+                label="학원 등록일"
+                value={formData.registrationDate}
+                onChange={handleDateChange}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    fullWidth
+                    margin="normal"
+                    name="registrationDate"
+                  />
+                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    margin: "normal"
+                  }
+                }}
+              />
+            </LocalizationProvider>
+          </Grid>
+
+          {/* 연락처 섹션 */}
+          <Grid item xs={12} sx={{ mt: 2 }}>
+            <Typography variant="subtitle1" color="primary" gutterBottom>
+              연락처 정보
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="motherPhone"
+              label="엄마 연락처"
+              name="motherPhone"
               placeholder="010-XXXX-XXXX"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-            />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="registrationType-label">등록 유형</InputLabel>
-              <Select
-                labelId="registrationType-label"
-                id="registrationType"
-                name="registrationType"
-                value={formData.registrationType}
-                onChange={handleChange}
-                label="등록 유형"
-              >
-                <MenuItem value="정회원">정회원</MenuItem>
-                <MenuItem value="준회원">준회원</MenuItem>
-                <MenuItem value="체험">체험</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            <TextField
-              margin="normal"
-              fullWidth
-              id="arrivalTime"
-              label="등원 시간 (HH:MM)"
-              name="arrivalTime"
-              value={formData.arrivalTime}
-              onChange={handleChange}
+              value={formData.motherPhone}
+              onChange={handlePhoneInput}
             />
           </Grid>
 
@@ -234,70 +366,39 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
             <TextField
               margin="normal"
               fullWidth
-              id="departureTime"
-              label="하원 시간 (HH:MM)"
-              name="departureTime"
-              value={formData.departureTime}
-              onChange={handleChange}
+              id="fatherPhone"
+              label="아빠 연락처"
+              name="fatherPhone"
+              placeholder="010-XXXX-XXXX"
+              value={formData.fatherPhone}
+              onChange={handlePhoneInput}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="arrivalLocation-label">등원 위치</InputLabel>
-              <Select
-                labelId="arrivalLocation-label"
-                id="arrivalLocation"
-                name="arrivalLocation"
-                value={formData.arrivalLocation}
-                onChange={handleChange}
-                label="등원 위치"
-              >
-                <MenuItem value="우방아파트">우방아파트</MenuItem>
-                <MenuItem value="집앞">집앞</MenuItem>
-                <MenuItem value="대협로제1빌딩 113동">대협로제1빌딩 113동</MenuItem>
-                <MenuItem value="대형 102동">대형 102동</MenuItem>
-                <MenuItem value="중흥 113동">중흥 113동</MenuItem>
-                <MenuItem value="중흥 114동">중흥 114동</MenuItem>
-                <MenuItem value="빛뜨락자치회 홀겨운2번">빛뜨락자치회 홀겨운2번</MenuItem>
-                <MenuItem value="우미린10동">우미린10동</MenuItem>
-                <MenuItem value="한벼리유치원(530)">한벼리유치원(530)</MenuItem>
-                <MenuItem value="예시앞1111동">예시앞1111동</MenuItem>
-                <MenuItem value="예시앞 1120동">예시앞 1120동</MenuItem>
-                <MenuItem value="연결육아원(루어학원)">연결육아원(루어학원)</MenuItem>
-                <MenuItem value="중흥1차 정류장">중흥1차 정류장</MenuItem>
-                <MenuItem value="중흥2차 정류장">중흥2차 정류장</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="studentPhone"
+              label="학생 연락처"
+              name="studentPhone"
+              placeholder="010-XXXX-XXXX"
+              value={formData.studentPhone}
+              onChange={handlePhoneInput}
+            />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <FormControl fullWidth margin="normal">
-              <InputLabel id="departureLocation-label">하원 위치</InputLabel>
-              <Select
-                labelId="departureLocation-label"
-                id="departureLocation"
-                name="departureLocation"
-                value={formData.departureLocation}
-                onChange={handleChange}
-                label="하원 위치"
-              >
-                <MenuItem value="우방아파트">우방아파트</MenuItem>
-                <MenuItem value="집앞">집앞</MenuItem>
-                <MenuItem value="대협로제1빌딩 113동">대협로제1빌딩 113동</MenuItem>
-                <MenuItem value="대형 102동">대형 102동</MenuItem>
-                <MenuItem value="중흥 113동">중흥 113동</MenuItem>
-                <MenuItem value="중흥 114동">중흥 114동</MenuItem>
-                <MenuItem value="빛뜨락자치회 홀겨운2번">빛뜨락자치회 홀겨운2번</MenuItem>
-                <MenuItem value="우미린10동">우미린10동</MenuItem>
-                <MenuItem value="한벼리유치원(530)">한벼리유치원(530)</MenuItem>
-                <MenuItem value="예시앞1111동">예시앞1111동</MenuItem>
-                <MenuItem value="예시앞 1120동">예시앞 1120동</MenuItem>
-                <MenuItem value="연결육아원(루어학원)">연결육아원(루어학원)</MenuItem>
-                <MenuItem value="중흥1차 정류장">중흥1차 정류장</MenuItem>
-                <MenuItem value="중흥2차 정류장">중흥2차 정류장</MenuItem>
-              </Select>
-            </FormControl>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="otherPhone"
+              label="기타 연락처"
+              name="otherPhone"
+              placeholder="010-XXXX-XXXX"
+              value={formData.otherPhone}
+              onChange={handlePhoneInput}
+            />
           </Grid>
 
           <Grid item xs={12} sx={{ mt: 2 }}>

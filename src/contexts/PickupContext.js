@@ -91,10 +91,21 @@ export const PickupProvider = ({ children }) => {
     }
     
     // 학생들의 classes 배열 확인
-    console.log("학생 데이터 샘플:", allStudents.slice(0, 3).map(student => ({
-      name: student.name,
-      classes: student.classes
-    })));
+    console.log("모든 학생 데이터 목록:");
+    allStudents.forEach(student => {
+      console.log(`학생: ${student.name}, ID: ${student.id}, 수업시간: [${student.classes.join(', ')}]`);
+    });
+    
+    // 모든 수업 시간 출력
+    const allClassTimes = new Set();
+    allStudents.forEach(student => {
+      if (student.classes) {
+        student.classes.forEach(time => {
+          if (time) allClassTimes.add(time);
+        });
+      }
+    });
+    console.log("전체 수업 시간 목록:", Array.from(allClassTimes));
     
     // 수업 시간에 따른 필터링
     let filteredStudents = [...allStudents];
@@ -102,23 +113,50 @@ export const PickupProvider = ({ children }) => {
     // 특정 수업 시간이 선택되었을 경우에만 필터링 적용
     if (selectedClassTime !== 'all') {
       filteredStudents = allStudents.filter(student => {
-        // classes 배열이 없으면 필터링에서 제외
+        // 클래스 배열 확인
         if (!student.classes || student.classes.length === 0) {
           return false;
         }
         
-        const hasMatchingClass = student.classes.some(classTime => 
-          classTime && classTime.includes(selectedClassTime)
-        );
-        
-        console.log(`학생 ${student.name}의 수업 시간 [${student.classes.join(', ')}] - 매칭 여부: ${hasMatchingClass}`);
+        // 각 수업 시간을 정규화하여 비교
+        const hasMatchingClass = student.classes.some(classTime => {
+          if (!classTime) return false;
+          
+          // 다양한 시간 형식에 대응 (정확한 일치, 부분 일치, 숫자만 일치 등)
+          const exactMatch = classTime === selectedClassTime;
+          const containsMatch = classTime.includes(selectedClassTime);
+          const numberOnlyMatch = classTime.replace(/[^0-9]/g, '') === selectedClassTime.replace(/[^0-9]/g, '');
+          
+          // 정규화된 시간 비교
+          const normalizedClassTime = classTime.replace(/[\s:-]/g, '');
+          const normalizedSelectedTime = selectedClassTime.replace(/[\s:-]/g, '');
+          const normalizedMatch = normalizedClassTime.includes(normalizedSelectedTime);
+          
+          const isMatch = exactMatch || containsMatch || numberOnlyMatch || normalizedMatch;
+          console.log(`학생 ${student.name}의 수업 시간 '${classTime}' 매칭 결과:`, 
+                      { 정확히일치: exactMatch, 포함: containsMatch, 숫자만: numberOnlyMatch, 정규화: normalizedMatch });
+          
+          return isMatch;
+        });
         
         return hasMatchingClass;
       });
     }
     
     console.log(`필터링 결과: ${filteredStudents.length}명의 학생`);
+    // 전체 학생 표시 (임시)
+    //setStudents(allStudents);
     setStudents(filteredStudents);
+
+    console.log(`필터링 결과: ${filteredStudents.length}명의 학생`);
+    
+    // 임시 해결책: 필터링 결과가 없으면 모든 학생 표시
+    if (filteredStudents.length === 0) {
+      console.log("필터링 결과가 없어 전체 학생을 표시합니다.");
+      setStudents(allStudents);
+    } else {
+      setStudents(filteredStudents);
+    }
   };
   
   // 요일 변경 처리
@@ -251,23 +289,44 @@ export const PickupProvider = ({ children }) => {
       // 노션 API를 사용하여 데이터 가져오기
       const notionStudents = await fetchStudentsFromNotion();
       
+      // 원본 데이터 로깅
+      console.log("노션에서 가져온 원본 데이터:", notionStudents.slice(0, 2));
+      
       // 활성화된 학생만 필터링 (학생여부가 '여등록'인 경우)
       const activeStudents = notionStudents.filter(student => student.isActive);
       
       // 노션에서 가져온 학생 데이터 처리
       const processedStudents = activeStudents.map(student => {
-        // 수업 시간이 있는지 확인하고, 없으면 빈 배열 사용
-        const classTime = student.classTime || '';
-        
         // 디버깅 로그 추가
-        console.log(`학생 ${student.name}의 수업 시간:`, classTime);
+        console.log(`학생 ${student.name}의 원본 수업 시간:`, student.classTime);
+        
+        // 수업 시간 정규화 및 추출
+        const classTime = student.classTime || '';
+        let extractedTime = classTime;
+        
+        // 숫자 시간 형식 (예: "15:30", "16:30") 추출
+        const timePattern = /\d{1,2}:\d{2}/;
+        const match = String(classTime).match(timePattern);
+        if (match) {
+          extractedTime = match[0];
+          console.log(`학생 ${student.name}에서 추출한 시간:`, extractedTime);
+        }
+        
+        // 시간이 없으면 노션 데이터베이스에서 수업시간 열 자체의 값을 확인
+        if (!extractedTime && student.properties && student.properties['수업시간']) {
+          const timeField = student.properties['수업시간'];
+          if (timeField.select && timeField.select.name) {
+            extractedTime = timeField.select.name;
+            console.log(`속성에서 찾은 수업 시간:`, extractedTime);
+          }
+        }
         
         return {
           id: student.id,
           name: student.name,
           shortId: student.shortId,
-          // 수업 시간이 있으면 배열에 추가, 없으면 빈 배열
-          classes: classTime ? [classTime] : [],
+          // 원본 시간과 추출한 시간 모두 추가
+          classes: [classTime, extractedTime].filter(Boolean),
           registrationType: student.registrationType,
           waitingNumber: student.waitingNumber
         };

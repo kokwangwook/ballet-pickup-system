@@ -20,6 +20,8 @@ import {
 import { PickupProvider } from './contexts/PickupContext';
 import StudentTable from './components/StudentTable';
 import StudentForm from './components/StudentForm';
+import StudentSearch from './components/StudentSearch';
+import StudentDetail from './components/StudentDetail';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -83,7 +85,8 @@ function App() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
-  const [selectPromptOpen, setSelectPromptOpen] = useState(false);
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
@@ -107,14 +110,31 @@ function App() {
     setDialogOpen(false);
   };
 
-  // 학생 선택 프롬프트 열기
-  const handleOpenSelectPrompt = () => {
-    setSelectPromptOpen(true);
+  // 학생 검색 다이얼로그 열기
+  const handleOpenSearchDialog = () => {
+    setSearchDialogOpen(true);
   };
 
-  // 학생 선택 프롬프트 닫기
-  const handleCloseSelectPrompt = () => {
-    setSelectPromptOpen(false);
+  // 학생 검색 다이얼로그 닫기
+  const handleCloseSearchDialog = () => {
+    setSearchDialogOpen(false);
+  };
+
+  // 학생 정보 상세 다이얼로그 열기
+  const handleOpenDetailDialog = (student) => {
+    if (student) {
+      setSelectedStudent(student);
+      setDetailDialogOpen(true);
+      handleCloseSearchDialog();
+    } else {
+      setSnackbarMessage('학생 정보를 볼 학생을 먼저 선택해주세요.');
+      setSnackbarOpen(true);
+    }
+  };
+
+  // 학생 정보 상세 다이얼로그 닫기
+  const handleCloseDetailDialog = () => {
+    setDetailDialogOpen(false);
   };
 
   // 학생 정보 수정 다이얼로그 열기
@@ -122,7 +142,7 @@ function App() {
     if (student) {
       setSelectedStudent(student);
       setEditDialogOpen(true);
-      handleCloseSelectPrompt();
+      handleCloseDetailDialog();
     } else {
       setSnackbarMessage('수정할 학생을 먼저 선택해주세요.');
       setSnackbarOpen(true);
@@ -137,13 +157,8 @@ function App() {
 
   // 학생 선택 이벤트 처리
   const handleStudentSelect = (student) => {
-    if (selectPromptOpen) {
-      setSelectedStudent(student);
-      handleOpenEditDialog(student);
-    } else {
-      setSelectedStudent(student);
-      handleOpenEditDialog(student);
-    }
+    setSelectedStudent(student);
+    handleOpenDetailDialog(student);
   };
 
   return (
@@ -167,7 +182,7 @@ function App() {
               <Button 
                 color="inherit" 
                 startIcon={<EditIcon />}
-                onClick={handleOpenSelectPrompt}
+                onClick={handleOpenSearchDialog}
                 sx={{ mr: 1 }}
               >
                 등록정보수정
@@ -203,15 +218,29 @@ function App() {
             </DialogContent>
           </Dialog>
 
-          {/* 학생 선택 안내 다이얼로그 */}
-          <Dialog open={selectPromptOpen} onClose={handleCloseSelectPrompt}>
+          {/* 학생 검색 다이얼로그 */}
+          <Dialog open={searchDialogOpen} onClose={handleCloseSearchDialog} maxWidth="md" fullWidth>
             <DialogTitle>
-              학생 선택
+              학생 검색
             </DialogTitle>
             <DialogContent>
-              <DialogContentText>
-                정보를 수정할 학생을 목록에서 선택해주세요.
-              </DialogContentText>
+              <StudentSearch 
+                onStudentSelect={handleStudentSelect} 
+                onClose={handleCloseSearchDialog} 
+              />
+            </DialogContent>
+          </Dialog>
+
+          {/* 학생 정보 상세 다이얼로그 */}
+          <Dialog open={detailDialogOpen} onClose={handleCloseDetailDialog} maxWidth="md" fullWidth>
+            <DialogTitle>
+              학생 정보
+            </DialogTitle>
+            <DialogContent>
+              <StudentDetail 
+                student={selectedStudent} 
+                onEdit={handleOpenEditDialog} 
+              />
             </DialogContent>
           </Dialog>
 

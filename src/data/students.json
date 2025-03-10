@@ -202,5 +202,30 @@
     "departureStatus": false,
     "isActive": true,
     "registrationType": "정회원"
+  },
+  {
+    "id": "student-13",
+    "name": "고광욱",
+    "shortId": "11",
+    "classTime": "16:30",
+    "classes": [
+      "16:30"
+    ],
+    "arrivalLocation": "",
+    "departureLocation": "",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "motherPhone": "010-5623-8956",
+    "fatherPhone": "",
+    "studentPhone": "",
+    "otherPhone": "",
+    "classDays": [
+      "월",
+      "수",
+      "목",
+      "금"
+    ],
+    "registrationDate": "2025-03-12T15:00:00.000Z"
   }
 ]

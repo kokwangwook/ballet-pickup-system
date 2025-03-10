@@ -110,7 +110,6 @@ function App() {
   // 학생 선택 프롬프트 열기
   const handleOpenSelectPrompt = () => {
     setSelectPromptOpen(true);
-    handleMenuClose();
   };
 
   // 학생 선택 프롬프트 닫기
@@ -165,6 +164,14 @@ function App() {
               >
                 학생 등록
               </Button>
+              <Button 
+                color="inherit" 
+                startIcon={<EditIcon />}
+                onClick={handleOpenSelectPrompt}
+                sx={{ mr: 1 }}
+              >
+                등록정보수정
+              </Button>
               <IconButton
                 color="inherit"
                 onClick={handleMenuOpen}
@@ -177,10 +184,7 @@ function App() {
                 open={Boolean(menuAnchorEl)}
                 onClose={handleMenuClose}
               >
-                <MenuItem onClick={handleOpenSelectPrompt}>
-                  <EditIcon fontSize="small" sx={{ mr: 1 }} />
-                  등록정보수정
-                </MenuItem>
+                {/* 메뉴 항목들이 필요하면 이곳에 추가 */}
               </Menu>
             </Toolbar>
           </AppBar>

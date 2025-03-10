@@ -150,24 +150,33 @@ const StudentTable = () => {
   // 요일 버튼 생성
   const renderDateButtons = () => {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
+    const today = new Date();
+    const currentDayOfWeek = today.getDay(); // 0(일) ~ 6(토)
     const buttons = [];
     
-    // 오늘 날짜 기준 -3일부터 +3일까지 버튼 생성
-    for (let i = -3; i <= 3; i++) {
-      const date = addDays(new Date(), i);
-      const day = days[date.getDay()];
+    // 7일의 요일 버튼 생성
+    for (let i = 0; i < 7; i++) {
+      // 현재 선택된 날짜의 요일과 일치하는지 확인
+      const isSelected = i === selectedDate.getDay();
+      const isWeekend = i === 0 || i === 6; // 일요일 또는 토요일
+      
+      // 해당 요일에 해당하는 날짜 계산 (이번 주 기준)
+      const dayDiff = i - currentDayOfWeek;
+      const date = addDays(today, dayDiff);
       const dateNum = date.getDate();
-      const isSelected = format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
-      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
       
       buttons.push(
         <WeekdayButton
           key={i}
-          day={day}
+          day={days[i]}
           date={dateNum}
           selected={isSelected}
           isWeekend={isWeekend}
-          onClick={() => handleDateChange(date)}
+          onClick={() => {
+            // 요일 클릭 시 해당 요일의 날짜로 설정
+            const newDate = addDays(today, i - currentDayOfWeek);
+            handleDateChange(newDate);
+          }}
         />
       );
     }
@@ -217,34 +226,19 @@ const StudentTable = () => {
           </Typography>
         </Box>
         
-        {/* 날짜 선택 섹션 */}
+        {/* 요일 선택 섹션 */}
         <Box sx={{ mb: 2 }}>
           <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f7f7f7', borderRadius: 1 }}>
-            <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>날짜 선택</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>요일 선택</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                날짜: {formatDate(selectedDate)}
+              </Typography>
+            </Box>
             
-            <TextField
-              fullWidth
-              size="small"
-              value={formatDate(selectedDate)}
-              onChange={(e) => {
-                try {
-                  const date = parse(e.target.value, 'yyyy.MM.dd', new Date());
-                  if (!isNaN(date.getTime())) {
-                    handleDateChange(date);
-                  }
-                } catch (error) {
-                  // 유효하지 않은 날짜 무시
-                }
-              }}
-              sx={{ '.MuiOutlinedInput-root': { borderRadius: '4px' } }}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <CalendarTodayIcon />
-                  </InputAdornment>
-                )
-              }}
-            />
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              {renderDateButtons()}
+            </Box>
           </Paper>
         </Box>
         
@@ -285,19 +279,6 @@ const StudentTable = () => {
             </StatCard>
           </Grid>
         </Grid>
-        
-        {/* 요일 버튼 그룹 */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3, mt: 2 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            width: '100%', 
-            maxWidth: '560px', 
-            px: 2 
-          }}>
-            {renderDateButtons()}
-          </Box>
-        </Box>
         
         {/* 차량 섹션 */}
         {classGroups.map(group => (

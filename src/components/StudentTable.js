@@ -40,7 +40,7 @@ const DateButton = styled(Button)(({ theme, selected, isWeekend }) => ({
 }));
 
 // 스타일이 적용된 요일 버튼 컴포넌트
-const WeekdayButton = styled(Button)(({ theme, selected, isWeekend }) => ({
+const WeekdayStyledButton = styled(Button)(({ theme, selected, isWeekend }) => ({
   width: '40px',
   height: '38px',
   borderRadius: '4px',
@@ -318,31 +318,31 @@ const StudentTable = () => {
         {/* 통계 정보 */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <StatCard bgcolor="#1976d2">
+            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#1976d2', color: 'white', borderRadius: 1 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>전체 운행</Typography>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{totalStudents}</Typography>
-            </StatCard>
+            </Paper>
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <StatCard bgcolor="#388e3c">
+            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#388e3c', color: 'white', borderRadius: 1 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>등원 완료</Typography>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{arrivalCount}</Typography>
-            </StatCard>
+            </Paper>
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <StatCard bgcolor="#1976d2">
+            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#1976d2', color: 'white', borderRadius: 1 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>하원 완료</Typography>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{departureCount}</Typography>
-            </StatCard>
+            </Paper>
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <StatCard bgcolor="#f57c00">
+            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f57c00', color: 'white', borderRadius: 1 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>남은 운행</Typography>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{remainingCount}</Typography>
-            </StatCard>
+            </Paper>
           </Grid>
         </Grid>
         

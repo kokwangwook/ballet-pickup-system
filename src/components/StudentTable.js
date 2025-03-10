@@ -39,6 +39,24 @@ const DateButton = styled(Button)(({ theme, selected, isWeekend }) => ({
   },
 }));
 
+// 스타일이 적용된 요일 버튼 컴포넌트
+const WeekdayButton = styled(Button)(({ theme, selected, isWeekend }) => ({
+  width: '40px',
+  height: '38px',
+  borderRadius: '4px',
+  padding: 0,
+  minWidth: 'unset',
+  margin: '0 2px',
+  backgroundColor: selected ? theme.palette.primary.main : 'transparent',
+  color: isWeekend 
+    ? (selected ? 'white' : '#f44336') 
+    : (selected ? 'white' : theme.palette.text.primary),
+  border: `1px solid ${selected ? theme.palette.primary.main : '#e0e0e0'}`,
+  '&:hover': {
+    backgroundColor: selected ? theme.palette.primary.dark : theme.palette.action.hover,
+  },
+}));
+
 // 통계 카드 컴포넌트
 const StatCard = styled(Paper)(({ theme, bgcolor }) => ({
   backgroundColor: bgcolor,
@@ -229,7 +247,7 @@ const StudentTable = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>요일 선택</Typography>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                날짜: {formatDate(selectedDate)}
+                현재 요일: <strong>{getDayName(selectedDayOfWeek)}요일</strong>
               </Typography>
             </Box>
             
@@ -288,7 +306,7 @@ const StudentTable = () => {
         
         {classGroups.length === 0 && (
           <Alert severity="info">
-            선택한 날짜에 등록된 학생이 없습니다.
+            선택한 요일에 등록된 학생이 없습니다.
           </Alert>
         )}
       </Container>

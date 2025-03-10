@@ -44,6 +44,15 @@ export const fetchStudentsFromNotion = async () => {
     }
     
     const data = await response.json();
+    console.log("API 응답 데이터:", data);
+    console.log("데이터 길이:", data.length);
+    console.log("첫 번째 학생 데이터:", data.length > 0 ? data[0] : "학생 데이터 없음");
+    
+    // 서버 응답은 성공했지만 데이터가 비어있는 경우
+    if (data.length === 0) {
+      console.warn("노션 데이터베이스에서 학생 정보를 찾을 수 없습니다. 선택한 날짜에 데이터가 있는지 확인하세요.");
+    }
+    
     return data;
   } catch (error) {
     console.error('노션에서 데이터를 가져오는 중 오류가 발생했습니다:', error);
@@ -102,6 +111,14 @@ export const fetchClassInfoFromNotion = async () => {
     }
     
     const data = await response.json();
+    console.log("수업 정보 API 응답 데이터:", data);
+    console.log("수업 시간 항목 수:", Object.keys(data).length);
+    
+    // 서버 응답은 성공했지만 데이터가 비어있는 경우
+    if (Object.keys(data).length === 0) {
+      console.warn("노션 데이터베이스에서 수업 정보를 찾을 수 없습니다.");
+    }
+    
     return data;
   } catch (error) {
     console.error('노션에서 수업 정보를 가져오는 중 오류가 발생했습니다:', error);

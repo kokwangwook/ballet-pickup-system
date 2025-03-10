@@ -35,6 +35,9 @@ const notion = new Client({
 // 학생 목록 가져오기
 app.get('/api/students', async (req, res) => {
   try {
+    console.log('학생 데이터 요청 수신됨');
+    console.log('DATABASE_ID:', DATABASE_ID);
+
     const response = await notion.databases.query({
       database_id: DATABASE_ID,
       sorts: [
@@ -43,6 +46,11 @@ app.get('/api/students', async (req, res) => {
           direction: 'ascending',
         },
       ],
+    });
+    
+    console.log('노션 API 응답 결과:', {
+      총_결과_수: response.results.length,
+      첫_페이지_ID: response.results.length > 0 ? response.results[0].id : '결과 없음'
     });
     
     const students = response.results.map(page => {
@@ -113,6 +121,12 @@ app.get('/api/students', async (req, res) => {
         waitingNumber
       };
     });
+    
+    // 활성화된 학생만 필터링
+    const activeStudents = students.filter(student => student.isActive);
+    
+    console.log('전체 학생 수:', students.length);
+    console.log('활성화된 학생 수:', activeStudents.length);
     
     res.json(students);
   } catch (error) {

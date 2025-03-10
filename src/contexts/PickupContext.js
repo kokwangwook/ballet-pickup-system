@@ -241,46 +241,155 @@ export const PickupProvider = ({ children }) => {
     }));
   };
   
-  // 테스트용 학생 데이터 생성
+  // Notion API에서 학생 데이터 가져오기
   const fetchStudentsData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // 테스트용 더미 데이터를 생성합니다
-      console.log("테스트용 더미 데이터를 생성합니다...");
+      // Notion API 호출
+      console.log("Notion API에서 학생 데이터를 불러오는 중...");
+      const response = await fetch("/api/notion");
       
-      // 하드코딩된 테스트 데이터 (API 호출 대신 사용)
+      // 응답 상태 확인 및 로깅
+      console.log(`API 응답 상태: ${response.status}`);
+      
+      if (!response.ok) {
+        throw new Error(`API 요청 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Notion에서 받은 원본 데이터:", data);
+      
+      // 데이터가 비어있는지 확인
+      if (!data || !Array.isArray(data.results) || data.results.length === 0) {
+        console.warn("Notion에서 받은 학생 데이터가 없습니다.");
+        setAllStudents([]);
+        setStudents([]);
+        setLoading(false);
+        return;
+      }
+
+      console.log(`Notion에서 ${data.results.length}명의 학생 데이터를 받았습니다.`);
+
+      // 학생 데이터 정보를 처리하여 필요한 정보만 추출
+      const processedStudents = data.results.map(student => {
+        // properties 확인
+        if (!student.properties) {
+          console.warn("학생 데이터에 properties가 없습니다:", student);
+          return null;
+        }
+        
+        const properties = student.properties;
+        
+        // 필요한 속성들이 있는지 확인
+        const hasName = properties.Name && properties.Name.title && properties.Name.title.length > 0;
+        const hasClassTime = properties.ClassTime && properties.ClassTime.rich_text && properties.ClassTime.rich_text.length > 0;
+        const shortId = properties.ShortId?.number || Math.floor(Math.random() * 100); // ShortId가 없으면 임의의 번호 생성
+        
+        if (!hasName) {
+          console.warn("학생 이름이 없습니다:", student);
+          return null;
+        }
+        
+        const name = hasName ? properties.Name.title[0].plain_text : "이름 없음";
+        
+        // 클래스 시간 추출 (여러 형식 지원)
+        let classTimes = [];
+        
+        if (hasClassTime) {
+          const classTimeText = properties.ClassTime.rich_text[0].plain_text;
+          console.log(`학생 ${name}의 원본 수업 시간:`, classTimeText);
+          
+          // 쉼표, 공백, 그리고 기타 구분자로 나눔
+          classTimes = classTimeText.split(/[,;/\s]+/).filter(time => time.trim() !== '');
+          
+          // 정규표현식을 사용하여 시간 형식 (예: "10:00", "14:30") 추출
+          const timePattern = /\d{1,2}:\d{2}/g;
+          const extractedTimes = classTimeText.match(timePattern);
+          
+          if (extractedTimes) {
+            // 추출된 시간이 있으면 기존 배열에 추가 (중복 제거)
+            extractedTimes.forEach(time => {
+              if (!classTimes.includes(time)) {
+                classTimes.push(time);
+              }
+            });
+          }
+          
+          console.log(`학생 ${name}의 처리된 수업 시간:`, classTimes);
+        } else {
+          console.warn(`학생 ${name}의 수업 시간 정보가 없습니다.`);
+          // 임시 조치: 기본 수업 시간 할당
+          classTimes = ["10:00", "14:00", "16:00", "18:00"];
+        }
+        
+        // 처리된 학생 데이터 객체 생성
+        return {
+          id: student.id,
+          name: name,
+          shortId: shortId,
+          classes: classTimes,
+          isActive: true // 모든 학생을 활성 상태로 설정
+        };
+      }).filter(student => student !== null); // null 값 제거
+      
+      console.log("처리된 학생 데이터:", processedStudents);
+      
+      // 학생 위치 초기화
+      const initialLocations = {};
+      processedStudents.forEach(student => {
+        initialLocations[student.id] = {
+          arrival: 1,  // 기본값: 위치 1
+          departure: 1 // 기본값: 위치 1
+        };
+      });
+      setStudentLocations(initialLocations);
+      
+      // 도착/출발 상태 초기화
+      const initialArrival = {};
+      const initialDeparture = {};
+      processedStudents.forEach(student => {
+        initialArrival[student.id] = false;
+        initialDeparture[student.id] = false;
+      });
+      setArrivalStatus(initialArrival);
+      setDepartureStatus(initialDeparture);
+      
+      // 상태 업데이트
+      setAllStudents(processedStudents);
+      setStudents(processedStudents);
+      
+      setUseNotion(true);
+      setLoading(false);
+    } catch (error) {
+      console.error("학생 데이터 가져오기 오류:", error);
+      setError("학생 데이터를 가져오는 중에 오류가 발생했습니다.");
+      
+      // 오류 발생 시 테스트 데이터로 대체
+      console.log("오류로 인해 테스트 데이터를 사용합니다.");
       const testStudents = [];
       const classTimeOptions = ["10:00", "14:00", "16:00", "18:00"];
       
-      // 15명의 테스트 학생 생성
       for (let i = 1; i <= 15; i++) {
-        // 모든 학생에게 모든 수업 시간 할당 (테스트용)
         testStudents.push({
           id: `test-student-${i}`,
           name: `테스트 학생 ${i}`,
-          shortId: i,  // shortId 추가
+          shortId: i,
           classes: classTimeOptions,
-          isActive: true,
-          arrivalStatus: false,
-          departureStatus: false
+          isActive: true
         });
       }
       
-      console.log(`${testStudents.length}명의 테스트 학생 데이터가 생성되었습니다.`);
-      console.log("테스트 학생 데이터:", testStudents);
-      
-      // 상태 업데이트
       setAllStudents(testStudents);
-      setStudents(testStudents); // 필터링 없이 모든 학생 표시
+      setStudents(testStudents);
       
       // 학생 위치 초기화
       const initialLocations = {};
       testStudents.forEach(student => {
         initialLocations[student.id] = {
-          arrival: 1,  // 기본값: 위치 1
-          departure: 1 // 기본값: 위치 1
+          arrival: 1,
+          departure: 1
         };
       });
       setStudentLocations(initialLocations);
@@ -295,25 +404,30 @@ export const PickupProvider = ({ children }) => {
       setArrivalStatus(initialArrival);
       setDepartureStatus(initialDeparture);
       
-      setLoading(false);
-    } catch (error) {
-      console.error("테스트 데이터 생성 오류:", error);
-      setError("테스트 데이터를 생성하는 중에 오류가 발생했습니다.");
-      setAllStudents([]);
+      setUseNotion(false);
       setLoading(false);
     }
   };
   
-  // 테스트 수업 정보 가져오기
+  // Notion에서 수업 정보 가져오기
   const fetchClassData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // 테스트용 수업 정보 생성
-      console.log("테스트용 수업 정보를 생성합니다...");
+      // Notion API를 사용하여 수업 정보 가져오기
+      console.log("Notion API에서 수업 정보를 불러오는 중...");
+      const notionClassInfo = await fetchClassInfoFromNotion();
+      setClassInfo(notionClassInfo);
+      setUseNotion(true);
       
-      // 테스트 수업 정보 하드코딩
+      setLoading(false);
+    } catch (error) {
+      console.error('수업 정보를 가져오는 중 오류가 발생했습니다:', error);
+      setError('노션에서 수업 정보를 가져오는 중 오류가 발생했습니다. 모의 데이터를 사용합니다.');
+      
+      // 오류 발생 시 테스트 데이터로 폴백
+      console.log("오류로 인해 테스트 수업 정보를 사용합니다.");
       const testClassInfo = {
         "10:00": {
           startTime: "10:00",
@@ -353,15 +467,7 @@ export const PickupProvider = ({ children }) => {
         }
       };
       
-      console.log("테스트 수업 정보:", testClassInfo);
       setClassInfo(testClassInfo);
-      setUseNotion(false); // 테스트 모드
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('테스트 수업 정보 생성 오류:', error);
-      setError('테스트 수업 정보를 생성하는 중에 오류가 발생했습니다.');
-      setClassInfo({});
       setUseNotion(false);
       setLoading(false);
     }

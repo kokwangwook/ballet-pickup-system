@@ -401,6 +401,7 @@ export const PickupProvider = ({ children }) => {
     handleClassTimeChange,
     formatDate,
     getDayName,
+    calculateTimes,
     classInfo,
     loading,
     error,

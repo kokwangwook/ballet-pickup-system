@@ -73,9 +73,11 @@ export const PickupProvider = ({ children }) => {
     // 로그로 수업 시간 확인
     const allClassTimes = new Set();
     studentList.forEach(student => {
-      student.classes.forEach(classTime => {
-        allClassTimes.add(classTime);
-      });
+      if (student.classes) {
+        student.classes.forEach(classTime => {
+          allClassTimes.add(classTime);
+        });
+      }
     });
     
     console.log('모든 수업 시간 목록:', Array.from(allClassTimes));
@@ -239,7 +241,7 @@ export const PickupProvider = ({ children }) => {
     }));
   };
   
-  // Notion API에서 학생 데이터 가져오기
+  // 테스트용 학생 데이터 생성
   const fetchStudentsData = async () => {
     try {
       setLoading(true);
@@ -271,7 +273,6 @@ export const PickupProvider = ({ children }) => {
       
       // 상태 업데이트
       setAllStudents(testStudents);
-      setProcessedStudents(testStudents);
       setStudents(testStudents); // 필터링 없이 모든 학생 표시
       
       // 학생 위치 초기화
@@ -299,30 +300,6 @@ export const PickupProvider = ({ children }) => {
       console.error("테스트 데이터 생성 오류:", error);
       setError("테스트 데이터를 생성하는 중에 오류가 발생했습니다.");
       setAllStudents([]);
-      setProcessedStudents([]);
-      setLoading(false);
-    }
-  };
-  
-  // 노션에서 수업 정보 가져오기
-  const fetchClassData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // 노션 API를 사용하여 수업 정보 가져오기
-      const notionClassInfo = await fetchClassInfoFromNotion();
-      setClassInfo(notionClassInfo);
-      setUseNotion(true);
-      
-    } catch (error) {
-      console.error('수업 정보를 가져오는 중 오류가 발생했습니다:', error);
-      setError('노션에서 수업 정보를 가져오는 중 오류가 발생했습니다. 모의 데이터를 사용합니다.');
-      
-      // 오류 발생 시 모의 데이터로 폴백
-      setClassInfo(mockClassInfo);
-      setUseNotion(false);
-    } finally {
       setLoading(false);
     }
   };
@@ -415,6 +392,7 @@ export const PickupProvider = ({ children }) => {
   const value = {
     students,
     allStudents,
+    processedStudents,
     selectedDate,
     selectedDayOfWeek,
     selectedClassTime,

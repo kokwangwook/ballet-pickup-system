@@ -14,8 +14,14 @@ export const PickupProvider = ({ children }) => {
   // 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState(new Date());
   
+  // 선택된 요일 상태 (0: 일요일, 1: 월요일, ..., 6: 토요일)
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(new Date().getDay());
+  
   // 학생 데이터 상태
   const [students, setStudents] = useState([]);
+  
+  // 모든 학생 데이터 (요일 필터링 전)
+  const [allStudents, setAllStudents] = useState([]);
   
   // 수업 정보 상태
   const [classInfo, setClassInfo] = useState({});
@@ -36,6 +42,60 @@ export const PickupProvider = ({ children }) => {
 
   // 날짜 포맷 변환 함수
   const formatDate = (date) => format(date, 'yyyy.MM.dd');
+  
+  // 요일 이름 가져오기
+  const getDayName = (dayIndex) => {
+    const days = ['일', '월', '화', '수', '목', '금', '토'];
+    return days[dayIndex];
+  };
+  
+  // 날짜 변경 시 요일도 함께 업데이트
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    setSelectedDayOfWeek(date.getDay());
+    filterStudentsByDay(date.getDay(), allStudents);
+  };
+  
+  // 요일 변경 시 해당 요일에 맞는 학생 필터링
+  const handleDayChange = (dayIndex) => {
+    // 오늘 날짜 기준으로 해당 요일의 날짜 계산
+    const today = new Date();
+    const currentDayOfWeek = today.getDay();
+    const dayDiff = dayIndex - currentDayOfWeek;
+    const newDate = new Date(today);
+    newDate.setDate(today.getDate() + dayDiff);
+    
+    setSelectedDate(newDate);
+    setSelectedDayOfWeek(dayIndex);
+    filterStudentsByDay(dayIndex, allStudents);
+  };
+  
+  // 요일에 따라 학생 필터링
+  const filterStudentsByDay = (dayIndex, studentList) => {
+    // 요일별 수업 필터링 로직 구현
+    // 예: 월요일(1)에는 특정 수업만 표시
+    const dayClassMap = {
+      0: ['일요일반'], // 일요일
+      1: ['3:40', '4:40', '5:40', '6:40'], // 월요일
+      2: ['3:40', '4:40', '5:40', '6:40'], // 화요일
+      3: ['3:40', '4:40', '5:40', '6:40'], // 수요일
+      4: ['3:40', '4:40', '5:40', '6:40'], // 목요일
+      5: ['3:40', '4:40', '5:40', '6:40'], // 금요일
+      6: ['토요일반'] // 토요일
+    };
+    
+    // 해당 요일에 수업이 있는 학생만 필터링
+    const filteredStudents = studentList.filter(student => {
+      return student.classes.some(classTime => {
+        // 수업 시간이 해당 요일의 수업 목록에 포함되어 있는지 확인
+        // 또는 수업 시간에 요일 정보가 포함되어 있는지 확인
+        return dayClassMap[dayIndex].includes(classTime) || 
+               classTime.includes(getDayName(dayIndex));
+      });
+    });
+    
+    setStudents(filteredStudents);
+  };
   
   // 시간 계산 함수
   const calculateTimes = (classTime) => {
@@ -183,18 +243,21 @@ export const PickupProvider = ({ children }) => {
         };
       });
       
-      setStudents(processedStudents);
+      setAllStudents(processedStudents);
       setArrivalStatus(initialArrivalStatus);
       setDepartureStatus(initialDepartureStatus);
       setStudentLocations(initialLocations);
       setUseNotion(true);
+      
+      // 현재 선택된 요일에 맞게 학생 필터링
+      filterStudentsByDay(selectedDayOfWeek, processedStudents);
       
     } catch (error) {
       console.error('학생 데이터를 가져오는 중 오류가 발생했습니다:', error);
       setError('노션에서 데이터를 가져오는 중 오류가 발생했습니다. 모의 데이터를 사용합니다.');
       
       // 오류 발생 시 모의 데이터로 폴백
-      setStudents(mockStudents);
+      setAllStudents(mockStudents);
       
       // 상태 초기화 (모의 데이터)
       const mockArrivalStatus = {};
@@ -209,6 +272,9 @@ export const PickupProvider = ({ children }) => {
       setDepartureStatus(mockDepartureStatus);
       setStudentLocations(initialStudentLocations);
       setUseNotion(false);
+      
+      // 현재 선택된 요일에 맞게 학생 필터링
+      filterStudentsByDay(selectedDayOfWeek, mockStudents);
     } finally {
       setLoading(false);
     }
@@ -261,19 +327,22 @@ export const PickupProvider = ({ children }) => {
   // 컨텍스트 값
   const value = {
     students,
-    classInfo,
-    studentLocations,
+    allStudents,
     selectedDate,
-    setSelectedDate,
+    selectedDayOfWeek,
+    handleDateChange,
+    handleDayChange,
     formatDate,
-    calculateTimes,
+    getDayName,
+    classInfo,
+    loading,
+    error,
     arrivalStatus,
     departureStatus,
+    studentLocations,
     toggleArrivalStatus,
     toggleDepartureStatus,
     updateStudentLocation,
-    loading,
-    error,
     useNotion
   };
   

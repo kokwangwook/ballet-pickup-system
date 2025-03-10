@@ -83,23 +83,21 @@ const WeekdayButton = ({ day, date, selected, onClick, isWeekend }) => {
 const StudentTable = () => {
   const { 
     students, 
-    selectedDate, 
-    setSelectedDate, 
+    selectedDate,
+    selectedDayOfWeek,
+    handleDateChange,
+    handleDayChange,
     formatDate, 
     loading, 
     error,
     arrivalStatus,
     departureStatus,
     studentLocations,
-    useNotion
+    useNotion,
+    getDayName
   } = usePickup();
   
   const theme = useTheme();
-  
-  // 날짜 변경 핸들러
-  const handleDateChange = (newDate) => {
-    setSelectedDate(newDate);
-  };
   
   // 수업 시간별 학생 그룹화
   const groupStudentsByClass = () => {
@@ -156,8 +154,8 @@ const StudentTable = () => {
     
     // 7일의 요일 버튼 생성
     for (let i = 0; i < 7; i++) {
-      // 현재 선택된 날짜의 요일과 일치하는지 확인
-      const isSelected = i === selectedDate.getDay();
+      // 현재 선택된 요일과 일치하는지 확인
+      const isSelected = i === selectedDayOfWeek;
       const isWeekend = i === 0 || i === 6; // 일요일 또는 토요일
       
       // 해당 요일에 해당하는 날짜 계산 (이번 주 기준)
@@ -173,9 +171,8 @@ const StudentTable = () => {
           selected={isSelected}
           isWeekend={isWeekend}
           onClick={() => {
-            // 요일 클릭 시 해당 요일의 날짜로 설정
-            const newDate = addDays(today, i - currentDayOfWeek);
-            handleDateChange(newDate);
+            // 요일 클릭 시 해당 요일로 필터링
+            handleDayChange(i);
           }}
         />
       );

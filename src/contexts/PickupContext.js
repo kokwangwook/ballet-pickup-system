@@ -292,8 +292,11 @@ export const PickupProvider = ({ children }) => {
       // 원본 데이터 로깅
       console.log("노션에서 가져온 원본 데이터:", notionStudents.slice(0, 2));
       
-      // 활성화된 학생만 필터링 (학생여부가 '여등록'인 경우)
-      const activeStudents = notionStudents.filter(student => student.isActive);
+      // 모든 학생 데이터 사용 (필터링 제거)
+      const activeStudents = notionStudents;
+      
+      // 원본 데이터 로깅
+      console.log("노션에서 가져온 원본 데이터:", notionStudents.slice(0, 2));
       
       // 노션에서 가져온 학생 데이터 처리
       const processedStudents = activeStudents.map(student => {
@@ -329,6 +332,24 @@ export const PickupProvider = ({ children }) => {
           classes: [classTime, extractedTime].filter(Boolean),
           registrationType: student.registrationType,
           waitingNumber: student.waitingNumber
+        };
+      });
+      
+      // 모든 학생에게 임의로 수업 시간 할당 (긴급 수정)
+      const processedStudents = activeStudents.map(student => {
+        // 각 학생에게 모든 수업 시간 할당
+        const allTimes = ['15:30', '16:30', '17:30', '18:30', '19:30'];
+        
+        console.log(`학생 처리: ${student.name || '이름 없음'}, ID: ${student.id || '아이디 없음'}`);
+        
+        return {
+          id: student.id || `temp-${Math.random()}`,
+          name: student.name || '학생',
+          shortId: student.shortId || 0,
+          // 모든 수업 시간 추가
+          classes: allTimes,
+          registrationType: student.registrationType || '',
+          waitingNumber: student.waitingNumber || 0
         };
       });
       

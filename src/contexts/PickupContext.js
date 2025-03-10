@@ -26,6 +26,9 @@ export const PickupProvider = ({ children }) => {
   // 모든 학생 데이터 (필터링 전)
   const [allStudents, setAllStudents] = useState([]);
   
+  // 처리된 학생 데이터
+  const [processedStudents, setProcessedStudents] = useState([]);
+  
   // 수업 정보 상태
   const [classInfo, setClassInfo] = useState({});
   
@@ -255,6 +258,7 @@ export const PickupProvider = ({ children }) => {
         testStudents.push({
           id: `test-student-${i}`,
           name: `테스트 학생 ${i}`,
+          shortId: i,  // shortId 추가
           classes: classTimeOptions,
           isActive: true,
           arrivalStatus: false,
@@ -269,6 +273,26 @@ export const PickupProvider = ({ children }) => {
       setAllStudents(testStudents);
       setProcessedStudents(testStudents);
       setStudents(testStudents); // 필터링 없이 모든 학생 표시
+      
+      // 학생 위치 초기화
+      const initialLocations = {};
+      testStudents.forEach(student => {
+        initialLocations[student.id] = {
+          arrival: 1,  // 기본값: 위치 1
+          departure: 1 // 기본값: 위치 1
+        };
+      });
+      setStudentLocations(initialLocations);
+      
+      // 도착/출발 상태 초기화
+      const initialArrival = {};
+      const initialDeparture = {};
+      testStudents.forEach(student => {
+        initialArrival[student.id] = false;
+        initialDeparture[student.id] = false;
+      });
+      setArrivalStatus(initialArrival);
+      setDepartureStatus(initialDeparture);
       
       setLoading(false);
     } catch (error) {
@@ -299,6 +323,69 @@ export const PickupProvider = ({ children }) => {
       setClassInfo(mockClassInfo);
       setUseNotion(false);
     } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 테스트 수업 정보 가져오기
+  const fetchClassData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // 테스트용 수업 정보 생성
+      console.log("테스트용 수업 정보를 생성합니다...");
+      
+      // 테스트 수업 정보 하드코딩
+      const testClassInfo = {
+        "10:00": {
+          startTime: "10:00",
+          endTime: "11:00",
+          locations: {
+            1: "학원 앞",
+            2: "공원 입구",
+            3: "중앙역"
+          }
+        },
+        "14:00": {
+          startTime: "14:00",
+          endTime: "15:00",
+          locations: {
+            1: "학원 앞",
+            2: "공원 입구",
+            3: "중앙역"
+          }
+        },
+        "16:00": {
+          startTime: "16:00",
+          endTime: "17:00",
+          locations: {
+            1: "학원 앞",
+            2: "공원 입구",
+            3: "중앙역"
+          }
+        },
+        "18:00": {
+          startTime: "18:00",
+          endTime: "19:00",
+          locations: {
+            1: "학원 앞",
+            2: "공원 입구",
+            3: "중앙역"
+          }
+        }
+      };
+      
+      console.log("테스트 수업 정보:", testClassInfo);
+      setClassInfo(testClassInfo);
+      setUseNotion(false); // 테스트 모드
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('테스트 수업 정보 생성 오류:', error);
+      setError('테스트 수업 정보를 생성하는 중에 오류가 발생했습니다.');
+      setClassInfo({});
+      setUseNotion(false);
       setLoading(false);
     }
   };

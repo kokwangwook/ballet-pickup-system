@@ -34,7 +34,7 @@ export const fetchStudentsFromNotion = async () => {
   try {
     // 배포 환경에서도 작동하도록 URL을 완전한 경로로 구성
     const baseUrl = window.location.origin;
-    const url = `${baseUrl}/api/students`;
+    const url = `${baseUrl}/api/notion`;
     console.log("API 호출 URL:", url);
     
     const response = await fetch(url);

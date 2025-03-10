@@ -83,74 +83,30 @@ export const PickupProvider = ({ children }) => {
   const filterStudents = () => {
     console.log(`필터링 시작: ${getDayName(selectedDayOfWeek)}요일, 수업 시간: ${selectedClassTime}, 전체 학생 수: ${allStudents.length}`);
     
-    // allStudents가 비어있는지 확인
+    // 데이터가 없으면 빈 배열 반환
     if (!allStudents || allStudents.length === 0) {
       console.warn("필터링할 학생 데이터가 없습니다.");
       setStudents([]);
       return;
     }
     
-    // 학생들의 classes 배열 확인
-    console.log("모든 학생 데이터 목록:");
-    allStudents.forEach(student => {
-      console.log(`학생: ${student.name}, ID: ${student.id}, 수업시간: [${student.classes.join(', ')}]`);
-    });
-    
-    // 모든 수업 시간 출력
-    const allClassTimes = new Set();
-    allStudents.forEach(student => {
-      if (student.classes) {
-        student.classes.forEach(time => {
-          if (time) allClassTimes.add(time);
-        });
-      }
-    });
-    console.log("전체 수업 시간 목록:", Array.from(allClassTimes));
-    
-    // 수업 시간에 따른 필터링
+    // 기본적으로 모든 학생 선택
     let filteredStudents = [...allStudents];
     
-    // 특정 수업 시간이 선택되었을 경우에만 필터링 적용
+    // 특정 수업 시간이 선택된 경우만 필터링 적용
     if (selectedClassTime !== 'all') {
       filteredStudents = allStudents.filter(student => {
-        // 클래스 배열 확인
-        if (!student.classes || student.classes.length === 0) {
-          return false;
-        }
-        
-        // 각 수업 시간을 정규화하여 비교
-        const hasMatchingClass = student.classes.some(classTime => {
-          if (!classTime) return false;
-          
-          // 다양한 시간 형식에 대응 (정확한 일치, 부분 일치, 숫자만 일치 등)
-          const exactMatch = classTime === selectedClassTime;
-          const containsMatch = classTime.includes(selectedClassTime);
-          const numberOnlyMatch = classTime.replace(/[^0-9]/g, '') === selectedClassTime.replace(/[^0-9]/g, '');
-          
-          // 정규화된 시간 비교
-          const normalizedClassTime = classTime.replace(/[\s:-]/g, '');
-          const normalizedSelectedTime = selectedClassTime.replace(/[\s:-]/g, '');
-          const normalizedMatch = normalizedClassTime.includes(normalizedSelectedTime);
-          
-          const isMatch = exactMatch || containsMatch || numberOnlyMatch || normalizedMatch;
-          console.log(`학생 ${student.name}의 수업 시간 '${classTime}' 매칭 결과:`, 
-                      { 정확히일치: exactMatch, 포함: containsMatch, 숫자만: numberOnlyMatch, 정규화: normalizedMatch });
-          
-          return isMatch;
-        });
-        
-        return hasMatchingClass;
+        // classes 배열이 있고, 선택된 시간이 포함되어 있는지 확인
+        return student.classes && 
+               student.classes.some(classTime => classTime === selectedClassTime);
       });
+      
+      console.log(`${selectedClassTime} 시간대 학생 필터링 결과: ${filteredStudents.length}명`);
+    } else {
+      console.log("모든 시간대 학생 표시");
     }
     
-    console.log(`필터링 결과: ${filteredStudents.length}명의 학생`);
-    // 전체 학생 표시 (임시)
-    //setStudents(allStudents);
-    setStudents(filteredStudents);
-
-    console.log(`필터링 결과: ${filteredStudents.length}명의 학생`);
-    
-    // 임시 해결책: 필터링 결과가 없으면 모든 학생 표시
+    // 필터링 결과가 없으면 전체 학생 표시
     if (filteredStudents.length === 0) {
       console.log("필터링 결과가 없어 전체 학생을 표시합니다.");
       setStudents(allStudents);
@@ -280,142 +236,46 @@ export const PickupProvider = ({ children }) => {
     }));
   };
   
-  // 노션에서 학생 데이터 가져오기
+  // Notion API에서 학생 데이터 가져오기
   const fetchStudentsData = async () => {
     try {
       setLoading(true);
       setError(null);
+
+      // 테스트용 더미 데이터를 생성합니다
+      console.log("테스트용 더미 데이터를 생성합니다...");
       
-      // 노션 API를 사용하여 데이터 가져오기
-      const notionStudents = await fetchStudentsFromNotion();
+      // 하드코딩된 테스트 데이터 (API 호출 대신 사용)
+      const testStudents = [];
+      const classTimeOptions = ["10:00", "14:00", "16:00", "18:00"];
       
-      // 원본 데이터 로깅
-      console.log("노션에서 가져온 원본 데이터:", notionStudents.slice(0, 2));
+      // 15명의 테스트 학생 생성
+      for (let i = 1; i <= 15; i++) {
+        // 모든 학생에게 모든 수업 시간 할당 (테스트용)
+        testStudents.push({
+          id: `test-student-${i}`,
+          name: `테스트 학생 ${i}`,
+          classes: classTimeOptions,
+          isActive: true,
+          arrivalStatus: false,
+          departureStatus: false
+        });
+      }
       
-      // 모든 학생 데이터 사용 (필터링 제거)
-      const activeStudents = notionStudents;
+      console.log(`${testStudents.length}명의 테스트 학생 데이터가 생성되었습니다.`);
+      console.log("테스트 학생 데이터:", testStudents);
       
-      // 원본 데이터 로깅
-      console.log("노션에서 가져온 원본 데이터:", notionStudents.slice(0, 2));
+      // 상태 업데이트
+      setAllStudents(testStudents);
+      setProcessedStudents(testStudents);
+      setStudents(testStudents); // 필터링 없이 모든 학생 표시
       
-      // 노션에서 가져온 학생 데이터 처리
-      const processedStudents = activeStudents.map(student => {
-        // 디버깅 로그 추가
-        console.log(`학생 ${student.name}의 원본 수업 시간:`, student.classTime);
-        
-        // 수업 시간 정규화 및 추출
-        const classTime = student.classTime || '';
-        let extractedTime = classTime;
-        
-        // 숫자 시간 형식 (예: "15:30", "16:30") 추출
-        const timePattern = /\d{1,2}:\d{2}/;
-        const match = String(classTime).match(timePattern);
-        if (match) {
-          extractedTime = match[0];
-          console.log(`학생 ${student.name}에서 추출한 시간:`, extractedTime);
-        }
-        
-        // 시간이 없으면 노션 데이터베이스에서 수업시간 열 자체의 값을 확인
-        if (!extractedTime && student.properties && student.properties['수업시간']) {
-          const timeField = student.properties['수업시간'];
-          if (timeField.select && timeField.select.name) {
-            extractedTime = timeField.select.name;
-            console.log(`속성에서 찾은 수업 시간:`, extractedTime);
-          }
-        }
-        
-        return {
-          id: student.id,
-          name: student.name,
-          shortId: student.shortId,
-          // 원본 시간과 추출한 시간 모두 추가
-          classes: [classTime, extractedTime].filter(Boolean),
-          registrationType: student.registrationType,
-          waitingNumber: student.waitingNumber
-        };
-      });
-      
-      // 모든 학생에게 임의로 수업 시간 할당 (긴급 수정)
-      const processedStudents = activeStudents.map(student => {
-        // 각 학생에게 모든 수업 시간 할당
-        const allTimes = ['15:30', '16:30', '17:30', '18:30', '19:30'];
-        
-        console.log(`학생 처리: ${student.name || '이름 없음'}, ID: ${student.id || '아이디 없음'}`);
-        
-        return {
-          id: student.id || `temp-${Math.random()}`,
-          name: student.name || '학생',
-          shortId: student.shortId || 0,
-          // 모든 수업 시간 추가
-          classes: allTimes,
-          registrationType: student.registrationType || '',
-          waitingNumber: student.waitingNumber || 0
-        };
-      });
-      
-      // 상태 초기화
-      const initialArrivalStatus = {};
-      const initialDepartureStatus = {};
-      const initialLocations = {};
-      
-      activeStudents.forEach(student => {
-        // 등하원 상태 설정 (등원여부확인/하원여부확인 속성을 우선적으로 사용)
-        initialArrivalStatus[student.id] = student.arrivalCheckStatus === 'O' || student.arrivalStatus;
-        initialDepartureStatus[student.id] = student.departureCheckStatus === 'O' || student.departureStatus;
-        
-        // 학생별 위치 정보 매핑
-        const arrivalLocationId = Object.entries(classInfo[student.classTime]?.locations || {})
-          .find(([_, value]) => value === student.arrivalLocation)?.[0];
-        
-        const departureLocationId = Object.entries(classInfo[student.classTime]?.locations || {})
-          .find(([_, value]) => value === student.departureLocation)?.[0];
-        
-        initialLocations[student.id] = {
-          arrival: arrivalLocationId ? parseInt(arrivalLocationId) : null,
-          departure: departureLocationId ? parseInt(departureLocationId) : null
-        };
-      });
-      
-      setAllStudents(processedStudents);
-      setArrivalStatus(initialArrivalStatus);
-      setDepartureStatus(initialDepartureStatus);
-      setStudentLocations(initialLocations);
-      setUseNotion(true);
-      
-      // 디버깅용 로그 추가
-      console.log(`처리된 학생 데이터: ${processedStudents.length}명`);
-      console.log('첫 번째 학생 데이터 샘플:', processedStudents.length > 0 ? processedStudents[0] : '데이터 없음');
-      
-      // 현재 필터 설정에 맞게 학생 필터링
-      filterStudents();
-      
+      setLoading(false);
     } catch (error) {
-      console.error('학생 데이터를 가져오는 중 오류가 발생했습니다:', error);
-      setError('노션에서 데이터를 가져오는 중 오류가 발생했습니다. 모의 데이터를 사용합니다.');
-      
-      // 오류 발생 시 모의 데이터로 폴백
-      setAllStudents(mockStudents);
-      
-      // 상태 초기화 (모의 데이터)
-      const mockArrivalStatus = {};
-      const mockDepartureStatus = {};
-      
-      mockStudents.forEach(student => {
-        mockArrivalStatus[student.id] = false;
-        mockDepartureStatus[student.id] = false;
-      });
-      
-      setArrivalStatus(mockArrivalStatus);
-      setDepartureStatus(mockDepartureStatus);
-      setStudentLocations(initialStudentLocations);
-      setUseNotion(false);
-      
-      // 현재 필터 설정에 맞게 학생 필터링
-      // 약간의 지연 후 필터링을 적용하여 상태 업데이트가 완료되도록 함
-      setTimeout(() => {
-        filterStudents();
-      }, 100);
-    } finally {
+      console.error("테스트 데이터 생성 오류:", error);
+      setError("테스트 데이터를 생성하는 중에 오류가 발생했습니다.");
+      setAllStudents([]);
+      setProcessedStudents([]);
       setLoading(false);
     }
   };

@@ -81,15 +81,39 @@ export const PickupProvider = ({ children }) => {
   
   // 요일 및 수업 시간에 따라 학생 필터링
   const filterStudents = () => {
-    console.log(`필터링: ${getDayName(selectedDayOfWeek)}요일, 수업 시간: ${selectedClassTime}, 전체 학생 수: ${allStudents.length}`);
+    console.log(`필터링 시작: ${getDayName(selectedDayOfWeek)}요일, 수업 시간: ${selectedClassTime}, 전체 학생 수: ${allStudents.length}`);
+    
+    // allStudents가 비어있는지 확인
+    if (!allStudents || allStudents.length === 0) {
+      console.warn("필터링할 학생 데이터가 없습니다.");
+      setStudents([]);
+      return;
+    }
+    
+    // 학생들의 classes 배열 확인
+    console.log("학생 데이터 샘플:", allStudents.slice(0, 3).map(student => ({
+      name: student.name,
+      classes: student.classes
+    })));
     
     // 수업 시간에 따른 필터링
-    let filteredStudents = allStudents;
+    let filteredStudents = [...allStudents];
     
     // 특정 수업 시간이 선택되었을 경우에만 필터링 적용
     if (selectedClassTime !== 'all') {
       filteredStudents = allStudents.filter(student => {
-        return student.classes.some(classTime => classTime.includes(selectedClassTime));
+        // classes 배열이 없으면 필터링에서 제외
+        if (!student.classes || student.classes.length === 0) {
+          return false;
+        }
+        
+        const hasMatchingClass = student.classes.some(classTime => 
+          classTime && classTime.includes(selectedClassTime)
+        );
+        
+        console.log(`학생 ${student.name}의 수업 시간 [${student.classes.join(', ')}] - 매칭 여부: ${hasMatchingClass}`);
+        
+        return hasMatchingClass;
       });
     }
     
@@ -231,14 +255,23 @@ export const PickupProvider = ({ children }) => {
       const activeStudents = notionStudents.filter(student => student.isActive);
       
       // 노션에서 가져온 학생 데이터 처리
-      const processedStudents = activeStudents.map(student => ({
-        id: student.id,
-        name: student.name,
-        shortId: student.shortId,
-        classes: [student.classTime],
-        registrationType: student.registrationType,
-        waitingNumber: student.waitingNumber
-      }));
+      const processedStudents = activeStudents.map(student => {
+        // 수업 시간이 있는지 확인하고, 없으면 빈 배열 사용
+        const classTime = student.classTime || '';
+        
+        // 디버깅 로그 추가
+        console.log(`학생 ${student.name}의 수업 시간:`, classTime);
+        
+        return {
+          id: student.id,
+          name: student.name,
+          shortId: student.shortId,
+          // 수업 시간이 있으면 배열에 추가, 없으면 빈 배열
+          classes: classTime ? [classTime] : [],
+          registrationType: student.registrationType,
+          waitingNumber: student.waitingNumber
+        };
+      });
       
       // 상태 초기화
       const initialArrivalStatus = {};
@@ -269,7 +302,11 @@ export const PickupProvider = ({ children }) => {
       setStudentLocations(initialLocations);
       setUseNotion(true);
       
-      // 현재 선택된 요일에 맞게 학생 필터링
+      // 디버깅용 로그 추가
+      console.log(`처리된 학생 데이터: ${processedStudents.length}명`);
+      console.log('첫 번째 학생 데이터 샘플:', processedStudents.length > 0 ? processedStudents[0] : '데이터 없음');
+      
+      // 현재 필터 설정에 맞게 학생 필터링
       filterStudents();
       
     } catch (error) {
@@ -293,8 +330,11 @@ export const PickupProvider = ({ children }) => {
       setStudentLocations(initialStudentLocations);
       setUseNotion(false);
       
-      // 현재 선택된 요일에 맞게 학생 필터링
-      filterStudents();
+      // 현재 필터 설정에 맞게 학생 필터링
+      // 약간의 지연 후 필터링을 적용하여 상태 업데이트가 완료되도록 함
+      setTimeout(() => {
+        filterStudents();
+      }, 100);
     } finally {
       setLoading(false);
     }

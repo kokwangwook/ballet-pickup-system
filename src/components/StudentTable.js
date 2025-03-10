@@ -103,8 +103,10 @@ const StudentTable = () => {
     students, 
     selectedDate,
     selectedDayOfWeek,
+    selectedClassTime,
     handleDateChange,
     handleDayChange,
+    handleClassTimeChange,
     formatDate, 
     loading, 
     error,
@@ -247,13 +249,69 @@ const StudentTable = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>요일 선택</Typography>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                현재 요일: <strong>{getDayName(selectedDayOfWeek)}요일</strong>
+                현재 요일: <strong>{getDayName(selectedDayOfWeek)}요일</strong> (모든 요일 수업 표시)
               </Typography>
             </Box>
             
             <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               {renderDateButtons()}
             </Box>
+          </Paper>
+        </Box>
+        
+        {/* 수업 시간 필터 섹션 */}
+        <Box sx={{ mb: 3 }}>
+          <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f7f7f7', borderRadius: 1 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>수업 시간 필터</Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                선택: <strong>{selectedClassTime === 'all' ? '전체 시간' : selectedClassTime}</strong>
+              </Typography>
+            </Box>
+            
+            <ButtonGroup variant="outlined" fullWidth sx={{ mt: 1 }}>
+              <Button
+                onClick={() => handleClassTimeChange('all')}
+                variant={selectedClassTime === 'all' ? 'contained' : 'outlined'}
+              >
+                전체
+              </Button>
+              <Button
+                onClick={() => handleClassTimeChange('15:30')}
+                variant={selectedClassTime === '15:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '15:30' ? 'white' : '#f44336', bgcolor: selectedClassTime === '15:30' ? '#f44336' : 'transparent' }}
+              >
+                15:30
+              </Button>
+              <Button
+                onClick={() => handleClassTimeChange('16:30')}
+                variant={selectedClassTime === '16:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '16:30' ? 'white' : '#4caf50', bgcolor: selectedClassTime === '16:30' ? '#4caf50' : 'transparent' }}
+              >
+                16:30
+              </Button>
+              <Button
+                onClick={() => handleClassTimeChange('17:30')}
+                variant={selectedClassTime === '17:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '17:30' ? 'white' : '#9c27b0', bgcolor: selectedClassTime === '17:30' ? '#9c27b0' : 'transparent' }}
+              >
+                17:30
+              </Button>
+              <Button
+                onClick={() => handleClassTimeChange('18:30')}
+                variant={selectedClassTime === '18:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '18:30' ? 'white' : '#2196f3', bgcolor: selectedClassTime === '18:30' ? '#2196f3' : 'transparent' }}
+              >
+                18:30
+              </Button>
+              <Button
+                onClick={() => handleClassTimeChange('19:30')}
+                variant={selectedClassTime === '19:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '19:30' ? 'white' : '#ff9800', bgcolor: selectedClassTime === '19:30' ? '#ff9800' : 'transparent' }}
+              >
+                19:30
+              </Button>
+            </ButtonGroup>
           </Paper>
         </Box>
         
@@ -306,7 +364,7 @@ const StudentTable = () => {
         
         {classGroups.length === 0 && (
           <Alert severity="info">
-            선택한 요일({getDayName(selectedDayOfWeek)}요일)에 등록된 학생이 없습니다.
+            등록된 학생이 없습니다.
           </Alert>
         )}
       </Container>

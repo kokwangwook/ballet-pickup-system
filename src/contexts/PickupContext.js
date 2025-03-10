@@ -17,10 +17,13 @@ export const PickupProvider = ({ children }) => {
   // 선택된 요일 상태 (0: 일요일, 1: 월요일, ..., 6: 토요일)
   const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(new Date().getDay());
   
+  // 선택된 수업 시간 (기본값은 모든 시간)
+  const [selectedClassTime, setSelectedClassTime] = useState('all');
+  
   // 학생 데이터 상태
   const [students, setStudents] = useState([]);
   
-  // 모든 학생 데이터 (요일 필터링 전)
+  // 모든 학생 데이터 (필터링 전)
   const [allStudents, setAllStudents] = useState([]);
   
   // 수업 정보 상태
@@ -56,7 +59,45 @@ export const PickupProvider = ({ children }) => {
     filterStudentsByDay(date.getDay(), allStudents);
   };
   
-  // 요일 변경 시 해당 요일에 맞는 학생 필터링
+  // 요일에 따라 학생 필터링
+  const filterStudentsByDay = (dayIndex, studentList) => {
+    console.log(`요일별 필터링: ${getDayName(dayIndex)}요일, 전체 학생 수: ${studentList.length}`);
+    
+    // 모든 요일에 동일한 수업 시간이 적용되므로 모든 학생을 표시
+    // 단, UI에는 현재 선택된 요일을 표시함
+    setStudents(studentList);
+    
+    // 로그로 수업 시간 확인
+    const allClassTimes = new Set();
+    studentList.forEach(student => {
+      student.classes.forEach(classTime => {
+        allClassTimes.add(classTime);
+      });
+    });
+    
+    console.log('모든 수업 시간 목록:', Array.from(allClassTimes));
+    console.log(`${getDayName(dayIndex)}요일 수업 진행 중: 총 ${studentList.length}명의 학생`);
+  };
+  
+  // 요일 및 수업 시간에 따라 학생 필터링
+  const filterStudents = () => {
+    console.log(`필터링: ${getDayName(selectedDayOfWeek)}요일, 수업 시간: ${selectedClassTime}, 전체 학생 수: ${allStudents.length}`);
+    
+    // 수업 시간에 따른 필터링
+    let filteredStudents = allStudents;
+    
+    // 특정 수업 시간이 선택되었을 경우에만 필터링 적용
+    if (selectedClassTime !== 'all') {
+      filteredStudents = allStudents.filter(student => {
+        return student.classes.some(classTime => classTime.includes(selectedClassTime));
+      });
+    }
+    
+    console.log(`필터링 결과: ${filteredStudents.length}명의 학생`);
+    setStudents(filteredStudents);
+  };
+  
+  // 요일 변경 처리
   const handleDayChange = (dayIndex) => {
     // 오늘 날짜 기준으로 해당 요일의 날짜 계산
     const today = new Date();
@@ -67,33 +108,13 @@ export const PickupProvider = ({ children }) => {
     
     setSelectedDate(newDate);
     setSelectedDayOfWeek(dayIndex);
-    filterStudentsByDay(dayIndex, allStudents);
+    filterStudents();
   };
   
-  // 요일에 따라 학생 필터링
-  const filterStudentsByDay = (dayIndex, studentList) => {
-    console.log(`요일별 필터링: ${getDayName(dayIndex)}요일, 전체 학생 수: ${studentList.length}`);
-    
-    // 실제 데이터 확인을 위한 로깅
-    if (studentList.length > 0) {
-      console.log('첫 번째 학생의 수업 시간:', studentList[0].classes);
-    }
-    
-    // 모든 학생 데이터 표시 (임시 조치)
-    setStudents(studentList);
-    
-    // 실제 모든 수업 시간 확인
-    const allClassTimes = new Set();
-    studentList.forEach(student => {
-      student.classes.forEach(classTime => {
-        allClassTimes.add(classTime);
-      });
-    });
-    
-    console.log('모든 수업 시간 목록:', Array.from(allClassTimes));
-    
-    // TODO: 모든 수업 시간을 확인한 후, 요일별 매핑을 업데이트합니다.
-    // 현재는 임시로 모든 학생을 표시하도록 합니다.
+  // 수업 시간 변경 처리
+  const handleClassTimeChange = (classTime) => {
+    setSelectedClassTime(classTime);
+    filterStudents();
   };
   
   // 시간 계산 함수
@@ -249,7 +270,7 @@ export const PickupProvider = ({ children }) => {
       setUseNotion(true);
       
       // 현재 선택된 요일에 맞게 학생 필터링
-      filterStudentsByDay(selectedDayOfWeek, processedStudents);
+      filterStudents();
       
     } catch (error) {
       console.error('학생 데이터를 가져오는 중 오류가 발생했습니다:', error);
@@ -273,7 +294,7 @@ export const PickupProvider = ({ children }) => {
       setUseNotion(false);
       
       // 현재 선택된 요일에 맞게 학생 필터링
-      filterStudentsByDay(selectedDayOfWeek, mockStudents);
+      filterStudents();
     } finally {
       setLoading(false);
     }
@@ -329,8 +350,10 @@ export const PickupProvider = ({ children }) => {
     allStudents,
     selectedDate,
     selectedDayOfWeek,
+    selectedClassTime,
     handleDateChange,
     handleDayChange,
+    handleClassTimeChange,
     formatDate,
     getDayName,
     classInfo,

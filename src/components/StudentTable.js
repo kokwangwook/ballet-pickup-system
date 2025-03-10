@@ -71,7 +71,7 @@ const StatCard = styled(Paper)(({ theme, bgcolor }) => ({
 }));
 
 // 요일 버튼 컴포넌트
-const WeekdayButton = ({ day, date, selected, onClick, isWeekend }) => {
+const WeekdayButtonContent = ({ day, date, selected, onClick, isWeekend }) => {
   const buttonColor = isWeekend 
     ? (selected ? 'white' : '#f44336') 
     : (selected ? 'white' : 'inherit');
@@ -182,7 +182,7 @@ const StudentTable = () => {
       const dateNum = date.getDate();
       
       buttons.push(
-        <WeekdayButton
+        <WeekdayButtonContent
           key={i}
           day={days[i]}
           date={dateNum}

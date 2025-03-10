@@ -68,7 +68,7 @@ const InfoSection = styled(Box)(({ theme }) => ({
 }));
 
 // 차량 섹션 컴포넌트
-const VehicleSection = ({ classTime, classStudents }) => {
+const VehicleSection = ({ classTime, classStudents, onStudentSelect }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
@@ -108,6 +108,13 @@ const VehicleSection = ({ classTime, classStudents }) => {
     };
   };
   
+  // 학생 행 클릭 이벤트 핸들러
+  const handleStudentClick = (student) => {
+    if (onStudentSelect) {
+      onStudentSelect(student);
+    }
+  };
+  
   // PC 버전 테이블 렌더링
   const renderDesktopTable = () => (
     <TableContainer component={Paper} elevation={0} sx={{ mb: 4, border: '1px solid #e0e0e0', borderTop: 'none', borderRadius: 0 }}>
@@ -135,7 +142,12 @@ const VehicleSection = ({ classTime, classStudents }) => {
             } = prepareStudentData(student);
             
             return (
-              <TableRow key={student.id} hover>
+              <TableRow 
+                key={student.id} 
+                hover
+                onClick={() => handleStudentClick(student)}
+                sx={{ cursor: 'pointer' }}
+              >
                 <StyledTableCell align="left">
                   {student.name} ({student.shortId})
                   {student.registrationType && (
@@ -181,7 +193,7 @@ const VehicleSection = ({ classTime, classStudents }) => {
   
   // 모바일 버전 카드 렌더링
   const renderMobileCards = () => (
-    <Box sx={{ mt: 0 }}>
+    <Box sx={{ mt: 1 }}>
       {classStudents.map((student) => {
         const { 
           arrivalTime, 
@@ -193,7 +205,16 @@ const VehicleSection = ({ classTime, classStudents }) => {
         } = prepareStudentData(student);
         
         return (
-          <MobileStudentCard key={student.id}>
+          <Card 
+            key={student.id} 
+            elevation={0} 
+            sx={{ 
+              mb: 2, 
+              border: '1px solid #e0e0e0',
+              cursor: 'pointer'
+            }}
+            onClick={() => handleStudentClick(student)}
+          >
             <InfoSection>
               <Typography variant="subtitle2">
                 {student.name} ({student.shortId})
@@ -271,7 +292,7 @@ const VehicleSection = ({ classTime, classStudents }) => {
                 </Grid>
               </Grid>
             </Box>
-          </MobileStudentCard>
+          </Card>
         );
       })}
     </Box>

@@ -1,0 +1,206 @@
+[
+  {
+    "id": "student-1",
+    "name": "이재인",
+    "shortId": 72,
+    "classTime": "15:30",
+    "classes": [
+      "15:30"
+    ],
+    "arrivalTime": "14:50",
+    "departureTime": "16:20",
+    "arrivalLocation": "학원 앞",
+    "departureLocation": "중앙역",
+    "arrivalStatus": true,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-2",
+    "name": "김서아",
+    "shortId": 46,
+    "classTime": "15:30",
+    "classes": [
+      "15:30"
+    ],
+    "arrivalTime": "14:50",
+    "departureTime": "16:20",
+    "arrivalLocation": "공원 입구",
+    "departureLocation": "학원 앞",
+    "arrivalStatus": true,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-3",
+    "name": "박가을",
+    "shortId": 43,
+    "classTime": "15:30",
+    "classes": [
+      "15:30"
+    ],
+    "arrivalTime": "14:50",
+    "departureTime": "16:20",
+    "arrivalLocation": "중앙역",
+    "departureLocation": "공원 입구",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-4",
+    "name": "이지유",
+    "shortId": 65,
+    "classTime": "16:30",
+    "classes": [
+      "16:30"
+    ],
+    "arrivalTime": "15:50",
+    "departureTime": "17:20",
+    "arrivalLocation": "학원 앞",
+    "departureLocation": "학원 앞",
+    "arrivalStatus": true,
+    "departureStatus": true,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-5",
+    "name": "최라온",
+    "shortId": 57,
+    "classTime": "16:30",
+    "classes": [
+      "16:30"
+    ],
+    "arrivalTime": "15:50",
+    "departureTime": "17:20",
+    "arrivalLocation": "공원 입구",
+    "departureLocation": "공원 입구",
+    "arrivalStatus": true,
+    "departureStatus": true,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-6",
+    "name": "허가빈",
+    "shortId": 69,
+    "classTime": "16:30",
+    "classes": [
+      "16:30"
+    ],
+    "arrivalTime": "15:50",
+    "departureTime": "17:20",
+    "arrivalLocation": "중앙역",
+    "departureLocation": "중앙역",
+    "arrivalStatus": true,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-7",
+    "name": "정민준",
+    "shortId": 33,
+    "classTime": "17:30",
+    "classes": [
+      "17:30"
+    ],
+    "arrivalTime": "16:50",
+    "departureTime": "18:20",
+    "arrivalLocation": "학원 앞",
+    "departureLocation": "학원 앞",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-8",
+    "name": "송하은",
+    "shortId": 28,
+    "classTime": "17:30",
+    "classes": [
+      "17:30"
+    ],
+    "arrivalTime": "16:50",
+    "departureTime": "18:20",
+    "arrivalLocation": "공원 입구",
+    "departureLocation": "중앙역",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-9",
+    "name": "강지호",
+    "shortId": 91,
+    "classTime": "18:30",
+    "classes": [
+      "18:30"
+    ],
+    "arrivalTime": "17:50",
+    "departureTime": "19:20",
+    "arrivalLocation": "중앙역",
+    "departureLocation": "학원 앞",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-10",
+    "name": "윤서윤",
+    "shortId": 52,
+    "classTime": "18:30",
+    "classes": [
+      "18:30"
+    ],
+    "arrivalTime": "17:50",
+    "departureTime": "19:20",
+    "arrivalLocation": "학원 앞",
+    "departureLocation": "공원 입구",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-11",
+    "name": "임도윤",
+    "shortId": 85,
+    "classTime": "19:30",
+    "classes": [
+      "19:30"
+    ],
+    "arrivalTime": "18:50",
+    "departureTime": "20:20",
+    "arrivalLocation": "공원 입구",
+    "departureLocation": "중앙역",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  },
+  {
+    "id": "student-12",
+    "name": "오하린",
+    "shortId": 39,
+    "classTime": "19:30",
+    "classes": [
+      "19:30"
+    ],
+    "arrivalTime": "18:50",
+    "departureTime": "20:20",
+    "arrivalLocation": "중앙역",
+    "departureLocation": "학원 앞",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "registrationType": "정회원"
+  }
+]

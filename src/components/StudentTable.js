@@ -13,7 +13,13 @@ import {
   useTheme,
   Paper,
   Grid,
-  InputAdornment
+  InputAdornment,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  Card
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -33,9 +39,10 @@ const DateButton = styled(Button)(({ theme, selected, isWeekend }) => ({
   color: isWeekend 
     ? (selected ? 'white' : '#f44336') 
     : (selected ? 'white' : theme.palette.text.primary),
-  border: `1px solid ${selected ? theme.palette.primary.main : '#e0e0e0'}`,
   '&:hover': {
-    backgroundColor: selected ? theme.palette.primary.dark : theme.palette.action.hover,
+    backgroundColor: selected 
+      ? theme.palette.primary.main 
+      : theme.palette.action.hover,
   },
 }));
 
@@ -70,6 +77,14 @@ const StatCard = styled(Paper)(({ theme, bgcolor }) => ({
   boxShadow: 'none'
 }));
 
+// 선택 가능한 테이블 행 스타일
+const StyledTableRow = styled(TableRow)(({ theme }) => ({
+  cursor: 'pointer',
+  '&:hover': {
+    backgroundColor: theme.palette.action.hover,
+  },
+}));
+
 // 요일 버튼 컴포넌트
 const WeekdayButtonContent = ({ day, date, selected, onClick, isWeekend }) => {
   const buttonColor = isWeekend 
@@ -98,7 +113,7 @@ const WeekdayButtonContent = ({ day, date, selected, onClick, isWeekend }) => {
 };
 
 // 학생 테이블 컴포넌트
-const StudentTable = () => {
+const StudentTable = ({ onStudentSelect }) => {
   const { 
     students, 
     selectedDate,
@@ -199,6 +214,13 @@ const StudentTable = () => {
     }
     
     return buttons;
+  };
+  
+  // TableRow 클릭 이벤트 핸들러 추가
+  const handleRowClick = (student) => {
+    if (onStudentSelect) {
+      onStudentSelect(student);
+    }
   };
   
   // 로딩 중 표시
@@ -348,10 +370,11 @@ const StudentTable = () => {
         
         {/* 차량 섹션 */}
         {classGroups.map(group => (
-          <VehicleSection 
+          <VehicleSection
             key={group.classTime}
             classTime={group.classTime}
             classStudents={group.students}
+            onStudentSelect={onStudentSelect}
           />
         ))}
         

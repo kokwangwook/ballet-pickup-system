@@ -473,6 +473,125 @@ export const PickupProvider = ({ children }) => {
     }
   };
   
+  // 학생 데이터 가져오기
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      // 서버 API 호출
+      const response = await fetch('/api/students');
+      
+      if (!response.ok) {
+        throw new Error(`서버 응답 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('API 응답 데이터:', data);
+      
+      setAllStudents(data);
+      setStudents(data);
+      
+      // 초기 학생 등하원 상태 설정
+      const initialArrivalStatus = {};
+      const initialDepartureStatus = {};
+      
+      data.forEach(student => {
+        initialArrivalStatus[student.id] = student.arrivalStatus || false;
+        initialDepartureStatus[student.id] = student.departureStatus || false;
+      });
+      
+      setArrivalStatus(initialArrivalStatus);
+      setDepartureStatus(initialDepartureStatus);
+      
+    } catch (error) {
+      console.error('학생 데이터 가져오기 오류:', error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 학생 추가 함수
+  const addStudent = async (studentData) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(studentData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '학생 등록에 실패했습니다.');
+      }
+
+      const newStudent = await response.json();
+      
+      // 상태 업데이트
+      setAllStudents(prev => [...prev, newStudent]);
+      setStudents(prev => [...prev, newStudent]);
+      
+      // 등하원 상태 업데이트
+      setArrivalStatus(prev => ({
+        ...prev,
+        [newStudent.id]: false
+      }));
+      
+      setDepartureStatus(prev => ({
+        ...prev,
+        [newStudent.id]: false
+      }));
+      
+      return newStudent;
+    } catch (error) {
+      console.error('학생 등록 오류:', error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 학생 정보 수정 함수
+  const updateStudent = async (studentId, studentData) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/students/${studentId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(studentData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '학생 정보 수정에 실패했습니다.');
+      }
+
+      const updatedStudent = await response.json();
+      
+      // 상태 업데이트
+      setAllStudents(prev => 
+        prev.map(student => student.id === studentId ? updatedStudent : student)
+      );
+      
+      setStudents(prev => 
+        prev.map(student => student.id === studentId ? updatedStudent : student)
+      );
+      
+      return updatedStudent;
+    } catch (error) {
+      console.error('학생 정보 수정 오류:', error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // 날짜가 변경될 때마다 데이터 다시 가져오기
   useEffect(() => {
     const loadData = async () => {
@@ -517,7 +636,10 @@ export const PickupProvider = ({ children }) => {
     toggleArrivalStatus,
     toggleDepartureStatus,
     updateStudentLocation,
-    useNotion
+    useNotion,
+    fetchStudents,
+    addStudent,
+    updateStudent
   };
   
   return (

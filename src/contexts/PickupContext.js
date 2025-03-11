@@ -30,7 +30,53 @@ export const PickupProvider = ({ children }) => {
   const [processedStudents, setProcessedStudents] = useState([]);
   
   // 수업 정보 상태
-  const [classInfo, setClassInfo] = useState({});
+  const [classInfo, setClassInfo] = useState({
+    "15:30": {
+      startTime: "15:30",
+      endTime: "16:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    },
+    "16:30": {
+      startTime: "16:30",
+      endTime: "17:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    },
+    "17:30": {
+      startTime: "17:30",
+      endTime: "18:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    },
+    "18:30": {
+      startTime: "18:30",
+      endTime: "19:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    },
+    "19:30": {
+      startTime: "19:30",
+      endTime: "20:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    }
+  });
   
   // 학생 위치 상태
   const [studentLocations, setStudentLocations] = useState({});
@@ -95,15 +141,52 @@ export const PickupProvider = ({ children }) => {
       return;
     }
     
-    // 기본적으로 모든 학생 선택
-    let filteredStudents = [...allStudents];
+    // 요일 매핑
+    const dayMap = {
+      0: '일',
+      1: '월',
+      2: '화', 
+      3: '수',
+      4: '목',
+      5: '금',
+      6: '토'
+    };
     
-    // 특정 수업 시간이 선택된 경우만 필터링 적용
-    if (selectedClassTime !== 'all') {
-      filteredStudents = allStudents.filter(student => {
-        // classes 배열이 있고, 선택된 시간이 포함되어 있는지 확인
-        return student.classes && 
-               student.classes.some(classTime => classTime === selectedClassTime);
+    // 현재 요일에 맞는 학생 필터링
+    let filteredStudents = allStudents.filter(student => {
+      // classDays 속성이 없거나 비어있는 경우에는 모든 요일에 표시
+      if (!student.classDays || student.classDays.length === 0) return true;
+      
+      // 현재 선택된 요일이 학생의 수업 요일에 포함되는지 확인
+      return student.classDays.includes(dayMap[selectedDayOfWeek]);
+    });
+    
+    console.log(`${getDayName(selectedDayOfWeek)}요일 학생 필터링 결과: ${filteredStudents.length}명`);
+    
+    // 특정 수업 시간이 선택된 경우만 추가 필터링 적용
+    if (selectedClassTime !== 'all' && filteredStudents.length > 0) {
+      filteredStudents = filteredStudents.filter(student => {
+        // 시간 일치 여부를 확인하는 변수
+        let matchesTime = false;
+        
+        // 1. classTime 속성 확인 (단일 문자열)
+        if (student.classTime === selectedClassTime) {
+          matchesTime = true;
+        }
+        
+        // 2. classes 배열 확인 (배열에 시간이 포함되어 있는지)
+        if (!matchesTime && student.classes && Array.isArray(student.classes)) {
+          if (student.classes.includes(selectedClassTime)) {
+            matchesTime = true;
+          }
+        }
+        
+        // 디버깅을 위한 로그
+        if (matchesTime) {
+          console.log(`학생 ${student.name}(${student.id})의 수업 시간이 ${selectedClassTime}와 일치합니다.`);
+        }
+        
+        return matchesTime;
       });
       
       console.log(`${selectedClassTime} 시간대 학생 필터링 결과: ${filteredStudents.length}명`);
@@ -111,17 +194,13 @@ export const PickupProvider = ({ children }) => {
       console.log("모든 시간대 학생 표시");
     }
     
-    // 필터링 결과가 없으면 전체 학생 표시
-    if (filteredStudents.length === 0) {
-      console.log("필터링 결과가 없어 전체 학생을 표시합니다.");
-      setStudents(allStudents);
-    } else {
-      setStudents(filteredStudents);
-    }
+    setStudents(filteredStudents);
   };
   
   // 요일 변경 처리
   const handleDayChange = (dayIndex) => {
+    console.log(`요일 변경: ${getDayName(dayIndex)}요일`);
+    
     // 오늘 날짜 기준으로 해당 요일의 날짜 계산
     const today = new Date();
     const currentDayOfWeek = today.getDay();
@@ -131,13 +210,92 @@ export const PickupProvider = ({ children }) => {
     
     setSelectedDate(newDate);
     setSelectedDayOfWeek(dayIndex);
-    filterStudents();
+    
+    // 상태 업데이트 후 필터링 실행을 위해 setTimeout 사용
+    setTimeout(() => {
+      console.log(`변경된 요일로 필터링 실행: ${getDayName(dayIndex)}요일`);
+      
+      // 요일 매핑
+      const dayMap = {
+        0: '일',
+        1: '월',
+        2: '화', 
+        3: '수',
+        4: '목',
+        5: '금',
+        6: '토'
+      };
+      
+      // 현재 요일에 맞는 학생만 필터링
+      let filteredByDay = allStudents.filter(student => {
+        if (!student.classDays || student.classDays.length === 0) return true;
+        return student.classDays.includes(dayMap[dayIndex]);
+      });
+      
+      // 선택된 수업 시간에 맞는 학생만 추가 필터링
+      if (selectedClassTime !== 'all') {
+        filteredByDay = filteredByDay.filter(student => {
+          // 1. classTime 속성 확인
+          if (student.classTime === selectedClassTime) return true;
+          
+          // 2. classes 배열 확인
+          if (student.classes && Array.isArray(student.classes)) {
+            return student.classes.includes(selectedClassTime);
+          }
+          
+          return false;
+        });
+      }
+      
+      console.log(`${getDayName(dayIndex)}요일 최종 필터링 결과: ${filteredByDay.length}명의 학생`);
+      setStudents(filteredByDay);
+    }, 0);
   };
   
   // 수업 시간 변경 처리
   const handleClassTimeChange = (classTime) => {
+    console.log(`수업 시간 변경: ${classTime}`);
     setSelectedClassTime(classTime);
-    filterStudents();
+    
+    // 상태 업데이트 후 필터링 실행을 위해 setTimeout 사용
+    setTimeout(() => {
+      console.log(`변경된 수업 시간으로 필터링 실행: ${classTime}`);
+      
+      // 요일 매핑
+      const dayMap = {
+        0: '일',
+        1: '월',
+        2: '화', 
+        3: '수',
+        4: '목',
+        5: '금',
+        6: '토'
+      };
+      
+      // 현재 요일에 맞는 학생만 필터링
+      let dayFilteredStudents = allStudents.filter(student => {
+        if (!student.classDays || student.classDays.length === 0) return true;
+        return student.classDays.includes(dayMap[selectedDayOfWeek]);
+      });
+      
+      // 선택된 수업 시간에 맞는 학생만 필터링
+      if (classTime !== 'all') {
+        dayFilteredStudents = dayFilteredStudents.filter(student => {
+          // 1. classTime 속성 확인
+          if (student.classTime === classTime) return true;
+          
+          // 2. classes 배열 확인
+          if (student.classes && Array.isArray(student.classes)) {
+            return student.classes.includes(classTime);
+          }
+          
+          return false;
+        });
+      }
+      
+      console.log(`시간 필터링 결과: ${dayFilteredStudents.length}명의 학생`);
+      setStudents(dayFilteredStudents);
+    }, 0);
   };
   
   // 시간 계산 함수
@@ -418,56 +576,28 @@ export const PickupProvider = ({ children }) => {
       // Notion API를 사용하여 수업 정보 가져오기
       console.log("Notion API에서 수업 정보를 불러오는 중...");
       const notionClassInfo = await fetchClassInfoFromNotion();
+      console.log("수업 정보 데이터 받음:", notionClassInfo);
+      
+      // 데이터 검증
+      if (!notionClassInfo || typeof notionClassInfo !== 'object' || Object.keys(notionClassInfo).length === 0) {
+        console.warn("서버에서 받은 수업 정보가 유효하지 않습니다. 기본 데이터를 사용합니다.");
+        // 기존 classInfo 상태를 유지 (초기값을 사용)
+        setLoading(false);
+        return;
+      }
+      
+      // notionClassInfo가 유효할 때만 상태 업데이트
       setClassInfo(notionClassInfo);
       setUseNotion(true);
       
       setLoading(false);
     } catch (error) {
       console.error('수업 정보를 가져오는 중 오류가 발생했습니다:', error);
-      setError('노션에서 수업 정보를 가져오는 중 오류가 발생했습니다. 모의 데이터를 사용합니다.');
+      setError('서버에서 수업 정보를 가져오는 중 오류가 발생했습니다. 기본 데이터를 사용합니다.');
       
-      // 오류 발생 시 테스트 데이터로 폴백
-      console.log("오류로 인해 테스트 수업 정보를 사용합니다.");
-      const testClassInfo = {
-        "10:00": {
-          startTime: "10:00",
-          endTime: "11:00",
-          locations: {
-            1: "학원 앞",
-            2: "공원 입구",
-            3: "중앙역"
-          }
-        },
-        "14:00": {
-          startTime: "14:00",
-          endTime: "15:00",
-          locations: {
-            1: "학원 앞",
-            2: "공원 입구",
-            3: "중앙역"
-          }
-        },
-        "16:00": {
-          startTime: "16:00",
-          endTime: "17:00",
-          locations: {
-            1: "학원 앞",
-            2: "공원 입구",
-            3: "중앙역"
-          }
-        },
-        "18:00": {
-          startTime: "18:00",
-          endTime: "19:00",
-          locations: {
-            1: "학원 앞",
-            2: "공원 입구",
-            3: "중앙역"
-          }
-        }
-      };
-      
-      setClassInfo(testClassInfo);
+      // 오류 발생 시에도 초기값을 유지하고 기본 데이터 사용 메시지만 로그
+      console.log("오류로 인해 기본 수업 정보를 계속 사용합니다.");
+      // classInfo는 이미 기본값으로 초기화되어 있으므로 여기서 다시 설정하지 않음
       setUseNotion(false);
       setLoading(false);
     }
@@ -478,6 +608,7 @@ export const PickupProvider = ({ children }) => {
     setLoading(true);
     try {
       // 서버 API 호출
+      console.log('서버에서 학생 데이터를 불러오는 중...');
       const response = await fetch('/api/students');
       
       if (!response.ok) {
@@ -485,7 +616,19 @@ export const PickupProvider = ({ children }) => {
       }
       
       const data = await response.json();
-      console.log('API 응답 데이터:', data);
+      console.log('학생 데이터 응답 받음:', data);
+      
+      // 데이터 검증
+      if (!Array.isArray(data)) {
+        console.error('서버에서 받은 학생 데이터가 배열 형식이 아닙니다:', data);
+        setError('서버에서 받은 학생 데이터 형식이 올바르지 않습니다.');
+        setLoading(false);
+        return;
+      }
+      
+      if (data.length === 0) {
+        console.warn('서버에서 받은 학생 데이터가 없습니다.');
+      }
       
       setAllStudents(data);
       setStudents(data);
@@ -504,7 +647,13 @@ export const PickupProvider = ({ children }) => {
       
     } catch (error) {
       console.error('학생 데이터 가져오기 오류:', error);
-      setError(error.message);
+      setError(`학생 데이터를 가져오는 중 오류가 발생했습니다: ${error.message}`);
+      
+      // 오류 발생 시 빈 배열 설정 (초기 상태 유지)
+      setAllStudents([]);
+      setStudents([]);
+      setArrivalStatus({});
+      setDepartureStatus({});
     } finally {
       setLoading(false);
     }
@@ -544,6 +693,31 @@ export const PickupProvider = ({ children }) => {
         [newStudent.id]: false
       }));
       
+      // studentLocations 업데이트
+      if (studentData.arrivalLocation || studentData.departureLocation) {
+        // 문자열 위치 정보를 숫자로 변환
+        const parseLocationId = (location) => {
+          if (!location) return null;
+          const numericLocation = parseInt(location);
+          if (!isNaN(numericLocation)) {
+            return numericLocation;
+          }
+          return location; // 숫자로 변환할 수 없는 경우 원래 값 사용
+        };
+        
+        // 위치 정보 업데이트
+        setStudentLocations(prev => ({
+          ...prev,
+          [newStudent.id]: {
+            arrival: studentData.arrivalLocation ? parseLocationId(studentData.arrivalLocation) : null,
+            departure: studentData.departureLocation ? parseLocationId(studentData.departureLocation) : null
+          }
+        }));
+        
+        console.log(`새 학생 ${newStudent.name}의 위치 정보가 설정되었습니다.`);
+        console.log(`등원 위치: ${studentData.arrivalLocation}, 하원 위치: ${studentData.departureLocation}`);
+      }
+      
       return newStudent;
     } catch (error) {
       console.error('학생 등록 오류:', error);
@@ -582,6 +756,32 @@ export const PickupProvider = ({ children }) => {
         prev.map(student => student.id === studentId ? updatedStudent : student)
       );
       
+      // studentLocations 업데이트
+      if (studentData.arrivalLocation || studentData.departureLocation) {
+        // 문자열 위치 정보를 숫자로 변환
+        const parseLocationId = (location) => {
+          if (!location) return null;
+          const numericLocation = parseInt(location);
+          if (!isNaN(numericLocation)) {
+            return numericLocation;
+          }
+          return location; // 숫자로 변환할 수 없는 경우 원래 값 사용
+        };
+        
+        // 위치 정보 업데이트
+        setStudentLocations(prev => ({
+          ...prev,
+          [studentId]: {
+            ...prev[studentId],
+            arrival: studentData.arrivalLocation ? parseLocationId(studentData.arrivalLocation) : prev[studentId]?.arrival,
+            departure: studentData.departureLocation ? parseLocationId(studentData.departureLocation) : prev[studentId]?.departure
+          }
+        }));
+        
+        console.log(`학생 ${updatedStudent.name}의 위치 정보가 업데이트되었습니다.`);
+        console.log(`등원 위치: ${studentData.arrivalLocation}, 하원 위치: ${studentData.departureLocation}`);
+      }
+      
       return updatedStudent;
     } catch (error) {
       console.error('학생 정보 수정 오류:', error);
@@ -598,15 +798,78 @@ export const PickupProvider = ({ children }) => {
       try {
         setLoading(true);
         
-        // 학생 데이터 및 수업 정보를 가져오기 전에 클래스 정보를 먼저 가져옴
-        await fetchClassData();
-        await fetchStudentsData();
+        // 학생 데이터 가져오기
+        const studentsResponse = await fetch('/api/students');
+        const studentsData = await studentsResponse.json();
         
-      } catch (error) {
-        console.error('데이터 로딩 중 오류가 발생했습니다:', error);
-        setError('데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      } finally {
+        // 활성화된 학생만 필터링
+        const activeStudents = studentsData.filter(student => student.isActive !== false);
+        
+        // 수업 정보 가져오기
+        const classResponse = await fetch('/api/class-info');
+        const classInfoData = await classResponse.json();
+        
+        // 학생 데이터와 수업 정보 설정
+        setClassInfo(classInfoData);
+        
+        // 전처리된 학생 데이터 생성
+        const processedStudents = activeStudents.map(student => {
+          // classDays 속성이 없으면 배열로 초기화
+          if (!student.classDays) {
+            student.classDays = [];
+          }
+          return student;
+        });
+        
+        // 위치 정보 초기화
+        const initialLocations = {};
+        processedStudents.forEach(student => {
+          // 기존에 있던 위치 정보 활용
+          const arrivalLocation = student.arrivalLocation ? parseInt(student.arrivalLocation) || student.arrivalLocation : null;
+          const departureLocation = student.departureLocation ? parseInt(student.departureLocation) || student.departureLocation : null;
+          
+          initialLocations[student.id] = {
+            arrival: arrivalLocation !== undefined ? arrivalLocation : null,
+            departure: departureLocation !== undefined ? departureLocation : null
+          };
+          
+          console.log(`학생 ${student.name}의 위치 정보 초기화: 등원(${arrivalLocation}), 하원(${departureLocation})`);
+        });
+        setStudentLocations(initialLocations);
+        
+        // 도착/출발 상태 초기화
+        const initialArrival = {};
+        const initialDeparture = {};
+        processedStudents.forEach(student => {
+          initialArrival[student.id] = student.arrivalStatus || false;
+          initialDeparture[student.id] = student.departureStatus || false;
+        });
+        setArrivalStatus(initialArrival);
+        setDepartureStatus(initialDeparture);
+        
+        // 상태 업데이트
+        setAllStudents(processedStudents);
+        setStudents(processedStudents);
+        
         setLoading(false);
+      } catch (error) {
+        console.error("학생 데이터 가져오기 오류:", error);
+        setError("학생 데이터를 가져오는 중에 오류가 발생했습니다.");
+        setLoading(false);
+        
+        // 테스트 데이터로 대체
+        const mockStudentsData = mockStudents.map(student => ({
+          ...student,
+          arrivalStatus: false,
+          departureStatus: false
+        }));
+        
+        setClassInfo(mockClassInfo);
+        setAllStudents(mockStudentsData);
+        setStudents(mockStudentsData);
+        
+        // 학생 위치 초기화
+        setStudentLocations(initialStudentLocations);
       }
     };
     
@@ -639,7 +902,8 @@ export const PickupProvider = ({ children }) => {
     useNotion,
     fetchStudents,
     addStudent,
-    updateStudent
+    updateStudent,
+    locations: classInfo
   };
   
   return (

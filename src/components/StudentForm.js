@@ -44,10 +44,13 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     motherPhone: '',
     studentPhone: '',
     classDays: [],
-    registrationDate: null,
+    registrationDate: new Date(),
     fatherPhone: '',
     otherPhone: '',
-    isActive: true
+    isActive: true,
+    school: '',
+    birthDate: null,
+    grade: ''
   });
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState(false);
@@ -68,7 +71,10 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
         registrationDate: student.registrationDate ? new Date(student.registrationDate) : null,
         fatherPhone: student.fatherPhone || '',
         otherPhone: student.otherPhone || '',
-        isActive: student.isActive !== undefined ? student.isActive : true
+        isActive: student.isActive !== undefined ? student.isActive : true,
+        school: student.school || '',
+        birthDate: student.birthDate ? new Date(student.birthDate) : null,
+        grade: student.grade || ''
       });
     }
   }, [isEdit, student]);
@@ -150,7 +156,8 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
     try {
       const dataToSubmit = {
         ...formData,
-        registrationDate: formData.registrationDate ? formData.registrationDate.toISOString() : null
+        registrationDate: formData.registrationDate ? formData.registrationDate.toISOString() : null,
+        birthDate: formData.birthDate ? formData.birthDate.toISOString() : null
       };
       
       if (isEdit) {
@@ -173,10 +180,13 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
           motherPhone: '',
           studentPhone: '',
           classDays: [],
-          registrationDate: null,
+          registrationDate: new Date(),
           fatherPhone: '',
           otherPhone: '',
-          isActive: true
+          isActive: true,
+          school: '',
+          birthDate: null,
+          grade: ''
         });
         setTimeout(() => {
           if (onClose) onClose();
@@ -298,8 +308,55 @@ const StudentForm = ({ student, onClose, isEdit = false }) => {
             <TextField
               margin="normal"
               fullWidth
+              id="school"
+              label="학교명"
+              name="school"
+              value={formData.school}
+              onChange={handleChange}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              fullWidth
+              id="grade"
+              label="학년"
+              name="grade"
+              value={formData.grade}
+              onChange={handleChange}
+              placeholder="예: 3학년"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+              <DatePicker
+                label="생년월일"
+                value={formData.birthDate}
+                onChange={(date) => {
+                  setFormData({
+                    ...formData,
+                    birthDate: date
+                  });
+                }}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    margin: "normal",
+                    name: "birthDate"
+                  }
+                }}
+              />
+            </LocalizationProvider>
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              fullWidth
               id="arrivalLocation"
-              label="픽업 위치"
+              label="등원위치"
               name="arrivalLocation"
               value={formData.arrivalLocation}
               onChange={handleChange}

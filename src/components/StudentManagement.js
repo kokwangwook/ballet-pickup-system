@@ -188,7 +188,9 @@ const StudentManagement = () => {
                         </Typography>
                       </Box>
                       <Typography sx={{ mb: 1.5 }} color="text.secondary">
-                        수업: {student.classTime} ~ {classInfo[student.classTime]?.endTime || '정보 없음'}
+                        수업: {student.classTime} {student.classTime && classInfo && classInfo[student.classTime] 
+                              ? `~ ${classInfo[student.classTime].endTime}` 
+                              : ''}
                       </Typography>
                       <Typography variant="body2">
                         등록 유형: {student.registrationType || '정회원'}

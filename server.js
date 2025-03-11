@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // CORS 설정
 app.use(cors());
@@ -27,8 +27,39 @@ function logServerInfo() {
   console.log(`수업 정보 파일 경로: ${CLASS_INFO_FILE_PATH}`);
 }
 
-// 서버 시작 시 로그 출력
+// 서버 시작 시 유효하지 않은 학생 데이터 정리
+function cleanupInvalidStudentData() {
+  try {
+    // 학생 데이터 파일 읽기
+    const studentsData = JSON.parse(fs.readFileSync(STUDENTS_FILE_PATH, 'utf8'));
+    
+    // 필수 항목(name, classTime)이 있는 학생만 필터링
+    const validStudents = studentsData.filter(student => {
+      const hasName = student.name && student.name.trim() !== '';
+      const hasClassTime = student.classTime && student.classTime.trim() !== '';
+      
+      if (!hasName || !hasClassTime) {
+        console.log(`유효하지 않은 학생 데이터 삭제: ${JSON.stringify(student)}`);
+        return false;
+      }
+      return true;
+    });
+    
+    // 변경된 학생 수가 있으면 파일에 저장
+    if (validStudents.length !== studentsData.length) {
+      console.log(`총 ${studentsData.length - validStudents.length}개의 유효하지 않은 학생 데이터가 삭제되었습니다.`);
+      fs.writeFileSync(STUDENTS_FILE_PATH, JSON.stringify(validStudents, null, 2), 'utf8');
+    } else {
+      console.log('모든 학생 데이터가 유효합니다.');
+    }
+  } catch (error) {
+    console.error('학생 데이터 정리 중 오류가 발생했습니다:', error);
+  }
+}
+
+// 서버 시작 시 초기화 함수 호출
 logServerInfo();
+cleanupInvalidStudentData();
 
 // 학생 목록 가져오기
 app.get('/api/students', (req, res) => {

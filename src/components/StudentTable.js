@@ -139,7 +139,21 @@ const StudentTable = ({ onStudentSelect }) => {
     const groups = {};
     
     students.forEach(student => {
-      student.classes.forEach(classTime => {
+      // classes 배열이 없는 경우를 처리
+      const classes = student.classes || [];
+      
+      // 클래스가 없는 경우 classTime을 기본값으로 사용
+      if (classes.length === 0 && student.classTime) {
+        classes.push(student.classTime);
+      }
+      
+      // 여전히 클래스가 없으면 건너뛰기
+      if (classes.length === 0) {
+        console.warn(`학생 ${student.name}(ID: ${student.id})에 수업 시간 정보가 없습니다.`);
+        return;
+      }
+      
+      classes.forEach(classTime => {
         if (!groups[classTime]) {
           groups[classTime] = [];
         }
@@ -271,7 +285,7 @@ const StudentTable = ({ onStudentSelect }) => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>요일 선택</Typography>
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                현재 요일: <strong>{getDayName(selectedDayOfWeek)}요일</strong> (모든 요일 수업 표시)
+                선택한 요일: <strong>{getDayName(selectedDayOfWeek)}요일</strong> (해당 요일 수업 학생만 표시)
               </Typography>
             </Box>
             
@@ -299,32 +313,39 @@ const StudentTable = ({ onStudentSelect }) => {
                 전체
               </Button>
               <Button
-                onClick={() => handleClassTimeChange('10:00')}
-                variant={selectedClassTime === '10:00' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '10:00' ? 'white' : '#f44336', bgcolor: selectedClassTime === '10:00' ? '#f44336' : 'transparent' }}
+                onClick={() => handleClassTimeChange('15:30')}
+                variant={selectedClassTime === '15:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '15:30' ? 'white' : '#f44336', bgcolor: selectedClassTime === '15:30' ? '#f44336' : 'transparent' }}
               >
-                10:00
+                15:30
               </Button>
               <Button
-                onClick={() => handleClassTimeChange('14:00')}
-                variant={selectedClassTime === '14:00' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '14:00' ? 'white' : '#4caf50', bgcolor: selectedClassTime === '14:00' ? '#4caf50' : 'transparent' }}
+                onClick={() => handleClassTimeChange('16:30')}
+                variant={selectedClassTime === '16:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '16:30' ? 'white' : '#4caf50', bgcolor: selectedClassTime === '16:30' ? '#4caf50' : 'transparent' }}
               >
-                14:00
+                16:30
               </Button>
               <Button
-                onClick={() => handleClassTimeChange('16:00')}
-                variant={selectedClassTime === '16:00' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '16:00' ? 'white' : '#9c27b0', bgcolor: selectedClassTime === '16:00' ? '#9c27b0' : 'transparent' }}
+                onClick={() => handleClassTimeChange('17:30')}
+                variant={selectedClassTime === '17:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '17:30' ? 'white' : '#9c27b0', bgcolor: selectedClassTime === '17:30' ? '#9c27b0' : 'transparent' }}
               >
-                16:00
+                17:30
               </Button>
               <Button
-                onClick={() => handleClassTimeChange('18:00')}
-                variant={selectedClassTime === '18:00' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '18:00' ? 'white' : '#2196f3', bgcolor: selectedClassTime === '18:00' ? '#2196f3' : 'transparent' }}
+                onClick={() => handleClassTimeChange('18:30')}
+                variant={selectedClassTime === '18:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '18:30' ? 'white' : '#2196f3', bgcolor: selectedClassTime === '18:30' ? '#2196f3' : 'transparent' }}
               >
-                18:00
+                18:30
+              </Button>
+              <Button
+                onClick={() => handleClassTimeChange('19:30')}
+                variant={selectedClassTime === '19:30' ? 'contained' : 'outlined'}
+                sx={{ color: selectedClassTime === '19:30' ? 'white' : '#ff9800', bgcolor: selectedClassTime === '19:30' ? '#ff9800' : 'transparent' }}
+              >
+                19:30
               </Button>
             </ButtonGroup>
           </Paper>

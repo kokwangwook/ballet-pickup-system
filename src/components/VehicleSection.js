@@ -276,10 +276,9 @@ const VehicleSection = ({ classTime, classStudents, onStudentSelect }) => {
               >
                 <StyledTableCell align="left" isArrival={true} width="65px" rightBorder={true}>
                   {student.name} ({student.shortId})
-                  {student.registrationType && (
+                  {student.waitingNumber && (
                     <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                      {student.registrationType}
-                      {student.waitingNumber ? ` (대기: ${student.waitingNumber})` : ''}
+                      {student.waitingNumber ? `대기: ${student.waitingNumber}` : ''}
                     </Typography>
                   )}
                 </StyledTableCell>
@@ -374,10 +373,9 @@ const VehicleSection = ({ classTime, classStudents, onStudentSelect }) => {
             <InfoSection>
               <Typography variant="subtitle2">
                 {student.name} ({student.shortId})
-                {student.registrationType && (
+                {student.waitingNumber && (
                   <Typography variant="caption" color="textSecondary" sx={{ display: 'block' }}>
-                    {student.registrationType}
-                    {student.waitingNumber ? ` (대기: ${student.waitingNumber})` : ''}
+                    {student.waitingNumber ? `대기: ${student.waitingNumber}` : ''}
                   </Typography>
                 )}
               </Typography>

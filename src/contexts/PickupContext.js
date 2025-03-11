@@ -792,6 +792,54 @@ export const PickupProvider = ({ children }) => {
     }
   };
   
+  // 학생 삭제 함수
+  const removeStudent = async (studentId) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/students/${studentId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '학생 삭제에 실패했습니다.');
+      }
+
+      // 상태 업데이트
+      setAllStudents(prev => prev.filter(student => student.id !== studentId));
+      setStudents(prev => prev.filter(student => student.id !== studentId));
+      
+      // 등하원 상태에서 삭제
+      setArrivalStatus(prev => {
+        const newStatus = { ...prev };
+        delete newStatus[studentId];
+        return newStatus;
+      });
+      
+      setDepartureStatus(prev => {
+        const newStatus = { ...prev };
+        delete newStatus[studentId];
+        return newStatus;
+      });
+      
+      // 학생 위치 정보에서 삭제
+      setStudentLocations(prev => {
+        const newLocations = { ...prev };
+        delete newLocations[studentId];
+        return newLocations;
+      });
+      
+      console.log(`학생 ID:${studentId} 삭제 완료`);
+      return true;
+    } catch (error) {
+      console.error('학생 삭제 오류:', error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
   // 날짜가 변경될 때마다 데이터 다시 가져오기
   useEffect(() => {
     const loadData = async () => {
@@ -903,6 +951,7 @@ export const PickupProvider = ({ children }) => {
     fetchStudents,
     addStudent,
     updateStudent,
+    removeStudent,
     locations: classInfo
   };
   

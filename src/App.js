@@ -313,14 +313,21 @@ function AppContent() {
       </Dialog>
 
       {/* 학생 검색 다이얼로그 */}
-      <Dialog open={searchDialogOpen} onClose={handleCloseSearchDialog} maxWidth="md" fullWidth>
-        <DialogTitle>
-          학생 검색
-        </DialogTitle>
-        <DialogContent>
+      <Dialog
+        open={searchDialogOpen}
+        onClose={handleCloseSearchDialog}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogContent sx={{ p: 0 }}>
           <StudentSearch 
-            onStudentSelect={handleStudentSelect} 
-            onClose={handleCloseSearchDialog} 
+            onStudentSelect={(student) => {
+              setSelectedStudent(student);
+              setEditDialogOpen(true);
+              setSearchDialogOpen(false);
+            }}
+            onClose={handleCloseSearchDialog}
+            onAddStudent={handleOpenDialog}
           />
         </DialogContent>
       </Dialog>

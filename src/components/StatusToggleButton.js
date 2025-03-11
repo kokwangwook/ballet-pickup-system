@@ -28,7 +28,7 @@ const StatusLabel = styled(Typography)(({ theme, statusActive, disabled }) => ({
     : disabled 
       ? theme.palette.text.disabled 
       : '#ff9800',
-  marginLeft: 2,
+  marginLeft: disabled ? 0 : 2,
 }));
 
 // 상태 토글 버튼 컴포넌트
@@ -36,6 +36,18 @@ const StatusToggleButton = ({ status, onClick, disabled }) => {
   // 불리언 값으로 변환
   const isActive = !!status;
   
+  // 차량탑승안함인 경우 텍스트만 표시
+  if (disabled) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <StatusLabel statusActive={isActive ? 1 : 0} disabled={disabled}>
+          {isActive ? '완료' : '차량탑승안함'}
+        </StatusLabel>
+      </Box>
+    );
+  }
+  
+  // 일반적인 경우 아이콘과 텍스트 표시
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <StatusIconButton 
@@ -47,7 +59,7 @@ const StatusToggleButton = ({ status, onClick, disabled }) => {
         {isActive ? <CheckCircleIcon fontSize="small" /> : <RadioButtonUncheckedIcon fontSize="small" />}
       </StatusIconButton>
       <StatusLabel statusActive={isActive ? 1 : 0} disabled={disabled}>
-        {isActive ? '완료' : disabled ? '차량탑승안함' : '대기중'}
+        {isActive ? '완료' : '대기중'}
       </StatusLabel>
     </Box>
   );

@@ -134,6 +134,27 @@ const StudentTable = ({ onStudentSelect }) => {
   
   const theme = useTheme();
   
+  // 오늘 날짜로 빠르게 이동하는 함수
+  const goToToday = () => {
+    const today = new Date();
+    handleDateChange(today);
+    handleDayChange(today.getDay());
+  };
+  
+  // 어제 날짜로 빠르게 이동하는 함수
+  const goToYesterday = () => {
+    const yesterday = addDays(selectedDate, -1);
+    handleDateChange(yesterday);
+    handleDayChange(yesterday.getDay());
+  };
+  
+  // 내일 날짜로 빠르게 이동하는 함수
+  const goToTomorrow = () => {
+    const tomorrow = addDays(selectedDate, 1);
+    handleDateChange(tomorrow);
+    handleDayChange(tomorrow.getDay());
+  };
+  
   // 수업 시간별 학생 그룹화
   const groupStudentsByClass = () => {
     const groups = {};
@@ -173,61 +194,141 @@ const StudentTable = ({ onStudentSelect }) => {
   // 수업 시간별 학생 그룹
   const classGroups = groupStudentsByClass();
   
-  // 통계 정보 계산 - 실제 상태 기반으로 계산
-  const totalStudents = students.length;
-  
-  // 등원 완료 학생 수 계산
-  const arrivalCount = Object.values(arrivalStatus).filter(status => status).length;
-  
-  // 하원 완료 학생 수 계산
-  const departureCount = Object.values(departureStatus).filter(status => status).length;
-  
-  // 남은 운행 수 계산 (등하원 모두 필요한 경우 각각 카운트)
-  const totalTrips = students.reduce((count, student) => {
-    // 등원 위치가 있으면 등원 운행 추가
-    if (studentLocations[student.id]?.arrival) count++;
-    // 하원 위치가 있으면 하원 운행 추가
-    if (studentLocations[student.id]?.departure) count++;
-    return count;
-  }, 0);
-  
-  // 남은 운행 = 전체 운행 - 완료된 운행
-  const remainingCount = totalTrips - arrivalCount - departureCount;
-  
-  // 요일 버튼 생성
-  const renderDateButtons = () => {
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const today = new Date();
-    const currentDayOfWeek = today.getDay(); // 0(일) ~ 6(토)
-    const buttons = [];
-    
-    // 7일의 요일 버튼 생성
-    for (let i = 0; i < 7; i++) {
-      // 현재 선택된 요일과 일치하는지 확인
-      const isSelected = i === selectedDayOfWeek;
-      const isWeekend = i === 0 || i === 6; // 일요일 또는 토요일
-      
-      // 해당 요일에 해당하는 날짜 계산 (이번 주 기준)
-      const dayDiff = i - currentDayOfWeek;
-      const date = addDays(today, dayDiff);
-      const dateNum = date.getDate();
-      
-      buttons.push(
-        <WeekdayButtonContent
-          key={i}
-          day={days[i]}
-          date={dateNum}
-          selected={isSelected}
-          isWeekend={isWeekend}
-          onClick={() => {
-            // 요일 클릭 시 해당 요일로 필터링
-            handleDayChange(i);
-          }}
-        />
-      );
+  // 날짜 선택 컴포넌트 렌더링
+  const renderDateSelector = () => {
+    // 이전 7일 및 다음 7일 계산
+    const dates = [];
+    for (let i = -3; i <= 3; i++) {
+      const date = addDays(selectedDate, i);
+      dates.push(date);
     }
     
-    return buttons;
+    return (
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 1.5, 
+          mb: 2, 
+          borderRadius: 2,
+          backgroundColor: '#f5f5f5',
+          border: '1px solid #e0e0e0' 
+        }}
+      >
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1 }}>
+              날짜 선택
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <ButtonGroup size="small" variant="outlined" sx={{ mr: 1 }}>
+                <Button 
+                  onClick={goToYesterday}
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  어제
+                </Button>
+                <Button 
+                  onClick={goToToday}
+                  variant="contained"
+                  color="primary"
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  오늘
+                </Button>
+                <Button 
+                  onClick={goToTomorrow}
+                  sx={{ fontSize: '0.75rem' }}
+                >
+                  내일
+                </Button>
+              </ButtonGroup>
+              <Typography variant="body2" color="textSecondary" sx={{ ml: 1 }}>
+                {format(selectedDate, 'yyyy년 MM월 dd일')} ({getDayName(selectedDayOfWeek)})
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {dates.map((date, index) => {
+                const day = date.getDay();
+                const isWeekend = day === 0 || day === 6; // 일요일(0) 또는 토요일(6)
+                const isSelected = format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd');
+                
+                return (
+                  <WeekdayButtonContent
+                    key={index}
+                    day={getDayName(day)}
+                    date={format(date, 'd')}
+                    selected={isSelected}
+                    isWeekend={isWeekend}
+                    onClick={() => {
+                      handleDateChange(date);
+                      handleDayChange(day);
+                    }}
+                  />
+                );
+              })}
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+    );
+  };
+  
+  const renderClassTimeFilter = () => {
+    const classTimes = Array.from(new Set(students.flatMap(student => 
+      student.classes && student.classes.length > 0 ? student.classes : [student.classTime]
+    ))).filter(Boolean).sort();
+    
+    const uniqueClassTimes = ['all', ...classTimes];
+    
+    return (
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 1.5, 
+          mb: 2, 
+          borderRadius: 2,
+          backgroundColor: '#f5f5f5',
+          border: '1px solid #e0e0e0' 
+        }}
+      >
+        <Grid container spacing={1} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1 }}>
+              수업 시간 필터
+            </Typography>
+            <Typography variant="body2" color="textSecondary">
+              {selectedClassTime === 'all' ? '모든 수업 시간' : `${selectedClassTime} 수업`}을 보고 있습니다.
+            </Typography>
+          </Grid>
+          <Grid item xs={12} md={8}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {uniqueClassTimes.map((time) => (
+                <Button
+                  key={time}
+                  variant={selectedClassTime === time ? 'contained' : 'outlined'}
+                  color="primary"
+                  size="small"
+                  onClick={() => handleClassTimeChange(time)}
+                  sx={{ 
+                    m: 0.5, 
+                    px: 1.5,
+                    fontSize: '0.8rem',
+                    backgroundColor: selectedClassTime === time ? theme.palette.primary.main : 'transparent',
+                    '&:hover': {
+                      backgroundColor: selectedClassTime === time ? theme.palette.primary.dark : theme.palette.action.hover,
+                    }
+                  }}
+                >
+                  {time === 'all' ? '모든 시간' : `${time}`}
+                </Button>
+              ))}
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
+    );
   };
   
   // TableRow 클릭 이벤트 핸들러 추가
@@ -249,6 +350,95 @@ const StudentTable = ({ onStudentSelect }) => {
       </Box>
     );
   }
+  
+  // 통계 렌더링
+  const renderStats = () => {
+    // 통계 계산
+    const totalStudents = students.length;
+    const totalPossibleTrips = totalStudents * 2; // 등원 + 하원 (모든 학생)
+    const presentStudents = students.filter(student => student.isActive).length;
+    const totalTrips = presentStudents * 2; // 등원 + 하원 (활성 학생만)
+    
+    const arrivalCount = Object.values(arrivalStatus).filter(Boolean).length;
+    const departureCount = Object.values(departureStatus).filter(Boolean).length;
+    const completedTrips = arrivalCount + departureCount;
+    const remainingCount = totalTrips - completedTrips;
+    
+    const arrivalPercentage = totalTrips > 0 ? Math.round((arrivalCount / presentStudents) * 100) : 0;
+    const departurePercentage = totalTrips > 0 ? Math.round((departureCount / presentStudents) * 100) : 0;
+    const completedPercentage = totalTrips > 0 ? Math.round((completedTrips / totalTrips) * 100) : 0;
+    
+    return (
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 1.5, 
+          mb: 2, 
+          borderRadius: 2,
+          backgroundColor: '#f8f8f8',
+          border: '1px solid #e0e0e0' 
+        }}
+      >
+        <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 1.5 }}>
+          오늘의 차량 운행 현황
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sm={3}>
+            <StatCard bgcolor="#4caf50">
+              <Typography variant="h5" fontWeight="bold">
+                {completedPercentage}%
+              </Typography>
+              <Typography variant="body2">
+                완료율
+              </Typography>
+              <Typography variant="caption">
+                {completedTrips}/{totalTrips} 완료
+              </Typography>
+            </StatCard>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <StatCard bgcolor="#2196f3">
+              <Typography variant="h5" fontWeight="bold">
+                {arrivalPercentage}%
+              </Typography>
+              <Typography variant="body2">
+                등원 완료
+              </Typography>
+              <Typography variant="caption">
+                {arrivalCount}/{presentStudents} 학생
+              </Typography>
+            </StatCard>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <StatCard bgcolor="#ff9800">
+              <Typography variant="h5" fontWeight="bold">
+                {departurePercentage}%
+              </Typography>
+              <Typography variant="body2">
+                하원 완료
+              </Typography>
+              <Typography variant="caption">
+                {departureCount}/{presentStudents} 학생
+              </Typography>
+            </StatCard>
+          </Grid>
+          <Grid item xs={6} sm={3}>
+            <StatCard bgcolor={remainingCount > 0 ? "#f44336" : "#9e9e9e"}>
+              <Typography variant="h5" fontWeight="bold">
+                {remainingCount}
+              </Typography>
+              <Typography variant="body2">
+                남은 운행
+              </Typography>
+              <Typography variant="caption">
+                {completedTrips}/{totalTrips} 완료
+              </Typography>
+            </StatCard>
+          </Grid>
+        </Grid>
+      </Paper>
+    );
+  };
   
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -279,77 +469,14 @@ const StudentTable = ({ onStudentSelect }) => {
           </Typography>
         </Box>
         
-        {/* 요일 선택 섹션 */}
-        <Box sx={{ mb: 2 }}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f7f7f7', borderRadius: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>요일 선택</Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                선택한 요일: <strong>{getDayName(selectedDayOfWeek)}요일</strong> (해당 요일 수업 학생만 표시)
-              </Typography>
-            </Box>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              {renderDateButtons()}
-            </Box>
-          </Paper>
-        </Box>
+        {/* 날짜 선택 */}
+        {renderDateSelector()}
         
-        {/* 수업 시간 필터 섹션 */}
-        <Box sx={{ mb: 3 }}>
-          <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f7f7f7', borderRadius: 1 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>수업 시간 필터</Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                선택: <strong>{selectedClassTime === 'all' ? '전체 시간' : selectedClassTime}</strong>
-              </Typography>
-            </Box>
-            
-            <ButtonGroup variant="outlined" fullWidth sx={{ mt: 1 }}>
-              <Button
-                onClick={() => handleClassTimeChange('all')}
-                variant={selectedClassTime === 'all' ? 'contained' : 'outlined'}
-              >
-                전체
-              </Button>
-              <Button
-                onClick={() => handleClassTimeChange('15:30')}
-                variant={selectedClassTime === '15:30' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '15:30' ? 'white' : '#f44336', bgcolor: selectedClassTime === '15:30' ? '#f44336' : 'transparent' }}
-              >
-                15:30
-              </Button>
-              <Button
-                onClick={() => handleClassTimeChange('16:30')}
-                variant={selectedClassTime === '16:30' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '16:30' ? 'white' : '#4caf50', bgcolor: selectedClassTime === '16:30' ? '#4caf50' : 'transparent' }}
-              >
-                16:30
-              </Button>
-              <Button
-                onClick={() => handleClassTimeChange('17:30')}
-                variant={selectedClassTime === '17:30' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '17:30' ? 'white' : '#9c27b0', bgcolor: selectedClassTime === '17:30' ? '#9c27b0' : 'transparent' }}
-              >
-                17:30
-              </Button>
-              <Button
-                onClick={() => handleClassTimeChange('18:30')}
-                variant={selectedClassTime === '18:30' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '18:30' ? 'white' : '#2196f3', bgcolor: selectedClassTime === '18:30' ? '#2196f3' : 'transparent' }}
-              >
-                18:30
-              </Button>
-              <Button
-                onClick={() => handleClassTimeChange('19:30')}
-                variant={selectedClassTime === '19:30' ? 'contained' : 'outlined'}
-                sx={{ color: selectedClassTime === '19:30' ? 'white' : '#ff9800', bgcolor: selectedClassTime === '19:30' ? '#ff9800' : 'transparent' }}
-              >
-                19:30
-              </Button>
-            </ButtonGroup>
-          </Paper>
-        </Box>
+        {/* 수업 시간 필터 */}
+        {renderClassTimeFilter()}
+        
+        {/* 통계 카드 */}
+        {renderStats()}
         
         {/* 에러 메시지 표시 */}
         {error && (
@@ -357,37 +484,6 @@ const StudentTable = ({ onStudentSelect }) => {
             {error}
           </Alert>
         )}
-        
-        {/* 통계 정보 */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#1976d2', color: 'white', borderRadius: 1 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>전체 운행</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{totalStudents}</Typography>
-            </Paper>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#388e3c', color: 'white', borderRadius: 1 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>등원 완료</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{arrivalCount}</Typography>
-            </Paper>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#1976d2', color: 'white', borderRadius: 1 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>하원 완료</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{departureCount}</Typography>
-            </Paper>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Paper elevation={0} sx={{ p: 2, backgroundColor: '#f57c00', color: 'white', borderRadius: 1 }}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>남은 운행</Typography>
-              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{remainingCount}</Typography>
-            </Paper>
-          </Grid>
-        </Grid>
         
         {/* 차량 섹션 */}
         {classGroups.map(group => (

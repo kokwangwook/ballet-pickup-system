@@ -736,95 +736,49 @@ app.delete('/api/stations/:id', (req, res) => {
   }
 });
 
-// 차량 위치 업데이트 API
-app.post('/api/vehicles/:vehicleId/location', async (req, res) => {
+// 차량 위치 정보 저장 객체
+const vehicleLocations = {};
+
+// 차량 위치 정보 업데이트 API
+app.post('/api/vehicles/update-location', (req, res) => {
   try {
-    const { vehicleId } = req.params;
-    const { latitude, longitude, timestamp } = req.body;
+    const { vehicleId, location } = req.body;
     
-    if (!latitude || !longitude) {
-      return res.status(400).json({ error: '위도와 경도는 필수 입력값입니다.' });
+    if (!vehicleId || !location) {
+      return res.status(400).json({ error: '차량 ID와 위치 정보가 필요합니다.' });
     }
     
-    // 위치 데이터 파일 경로
-    const locationFilePath = path.join(__dirname, 'data', 'vehicle-locations.json');
-    
-    // 기존 위치 데이터 읽기
-    let locationData = {};
-    try {
-      if (fs.existsSync(locationFilePath)) {
-        const fileData = fs.readFileSync(locationFilePath, 'utf8');
-        locationData = JSON.parse(fileData);
-      }
-    } catch (err) {
-      console.error('위치 데이터 파일 읽기 오류:', err);
-    }
-    
-    // 새 위치 정보 업데이트
-    locationData[vehicleId] = {
-      latitude: parseFloat(latitude),
-      longitude: parseFloat(longitude),
-      timestamp: timestamp || new Date().toISOString()
+    // 위치 정보 저장
+    vehicleLocations[vehicleId] = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      accuracy: location.accuracy,
+      timestamp: location.timestamp || new Date().toISOString()
     };
     
-    // 파일에 저장
-    fs.writeFileSync(locationFilePath, JSON.stringify(locationData, null, 2));
+    console.log(`차량 위치 업데이트: ${vehicleId}`, vehicleLocations[vehicleId]);
     
-    console.log(`차량 ${vehicleId}의 위치가 업데이트되었습니다: ${latitude}, ${longitude}`);
-    
-    res.status(200).json({ success: true, message: '차량 위치가 업데이트되었습니다.' });
-  } catch (err) {
-    console.error('차량 위치 업데이트 오류:', err);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('차량 위치 업데이트 오류:', error);
+    return res.status(500).json({ error: '서버 오류가 발생했습니다.' });
   }
 });
 
-// 차량 위치 조회 API
-app.get('/api/vehicles/:vehicleId/location', async (req, res) => {
-  try {
-    const { vehicleId } = req.params;
-    
-    // 위치 데이터 파일 경로
-    const locationFilePath = path.join(__dirname, 'data', 'vehicle-locations.json');
-    
-    // 위치 데이터 읽기
-    if (!fs.existsSync(locationFilePath)) {
-      return res.status(404).json({ error: '차량 위치 정보가 없습니다.' });
-    }
-    
-    const fileData = fs.readFileSync(locationFilePath, 'utf8');
-    const locationData = JSON.parse(fileData);
-    
-    if (!locationData[vehicleId]) {
-      return res.status(404).json({ error: `${vehicleId} 차량의 위치 정보가 없습니다.` });
-    }
-    
-    res.status(200).json(locationData[vehicleId]);
-  } catch (err) {
-    console.error('차량 위치 조회 오류:', err);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
-  }
+// 모든 차량 위치 정보 조회 API
+app.get('/api/vehicles/locations', (req, res) => {
+  return res.status(200).json(vehicleLocations);
 });
 
-// 모든 차량 위치 조회 API
-app.get('/api/vehicles/locations', async (req, res) => {
-  try {
-    // 위치 데이터 파일 경로
-    const locationFilePath = path.join(__dirname, 'data', 'vehicle-locations.json');
-    
-    // 위치 데이터 읽기
-    if (!fs.existsSync(locationFilePath)) {
-      return res.status(404).json({ error: '차량 위치 정보가 없습니다.' });
-    }
-    
-    const fileData = fs.readFileSync(locationFilePath, 'utf8');
-    const locationData = JSON.parse(fileData);
-    
-    res.status(200).json(locationData);
-  } catch (err) {
-    console.error('차량 위치 조회 오류:', err);
-    res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+// 특정 차량 위치 정보 조회 API
+app.get('/api/vehicles/:vehicleId/location', (req, res) => {
+  const { vehicleId } = req.params;
+  
+  if (!vehicleLocations[vehicleId]) {
+    return res.status(404).json({ error: '해당 차량의 위치 정보가 없습니다.' });
   }
+  
+  return res.status(200).json(vehicleLocations[vehicleId]);
 });
 
 // SMS 발송 API
@@ -1236,23 +1190,57 @@ app.post('/api/notification-settings/reset', (req, res) => {
 // IP 주소 확인 API
 app.get('/api/ip', (req, res) => {
   try {
-    // 클라이언트 IP 주소 가져오기
-    const ip = req.headers['x-forwarded-for'] || 
-               req.connection.remoteAddress || 
-               req.socket.remoteAddress || 
-               req.connection.socket.remoteAddress;
-    
-    // IPv6 형식에서 IPv4 추출 (::ffff:127.0.0.1 형식인 경우)
-    const ipv4 = ip.includes('::ffff:') ? ip.split('::ffff:')[1] : ip;
-    
-    res.status(200).json({ 
-      ip: ipv4,
+    res.json({
+      ip: req.ip,
       headers: req.headers,
       timestamp: new Date().toISOString()
     });
   } catch (err) {
     console.error('IP 주소 확인 오류:', err);
     res.status(500).json({ error: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 테스트 페이지 API 엔드포인트
+app.get('/api/test-page', (req, res) => {
+  try {
+    // 캐시 방지를 위한 헤더 설정
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
+    const testData = {
+      title: '테스트 페이지',
+      description: '이 페이지는 테스트를 위한 페이지입니다.',
+      sections: [
+        {
+          id: 1,
+          title: '섹션 1',
+          content: '이것은 첫 번째 섹션입니다.'
+        },
+        {
+          id: 2,
+          title: '섹션 2',
+          content: '이것은 두 번째 섹션입니다.'
+        },
+        {
+          id: 3,
+          title: '섹션 3',
+          content: '이것은 세 번째 섹션입니다.'
+        }
+      ],
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('테스트 페이지 데이터 전송:', testData);
+    res.json(testData);
+  } catch (err) {
+    console.error('테스트 페이지 데이터 오류:', err);
+    res.status(500).json({ 
+      error: '서버 오류가 발생했습니다.', 
+      message: err.message || '알 수 없는 오류',
+      timestamp: new Date().toISOString()
+    });
   }
 });
 

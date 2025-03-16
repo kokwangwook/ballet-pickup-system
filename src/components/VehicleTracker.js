@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, Button, CircularProgress, Alert } from '@mui/material';
-import MapView from './MapView';
+import SimpleMapView from './SimpleMapView';
 import { Link } from 'react-router-dom';
 
 const VehicleTracker = () => {
@@ -62,8 +62,10 @@ const VehicleTracker = () => {
         <Button
           variant="outlined"
           color="primary"
-          component={Link}
-          to="/driver"
+          component="a"
+          href="/driver"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           운전자 앱으로 이동
         </Button>
@@ -81,7 +83,7 @@ const VehicleTracker = () => {
         </Alert>
       )}
       
-      <MapView vehicleLocations={vehicleLocations} />
+      <SimpleMapView vehicleLocations={vehicleLocations} />
       
       <Box mt={3}>
         <Typography variant="h6" gutterBottom>
@@ -89,29 +91,25 @@ const VehicleTracker = () => {
         </Typography>
         
         {Object.keys(vehicleLocations).length > 0 ? (
-          Object.keys(vehicleLocations).map(vehicleId => {
-            const location = vehicleLocations[vehicleId];
-            return (
-              <Paper key={vehicleId} sx={{ p: 2, mb: 2 }}>
-                <Typography variant="subtitle1">
+          <Paper sx={{ p: 2 }}>
+            {Object.entries(vehicleLocations).map(([vehicleId, location]) => (
+              <Box key={vehicleId} mb={2}>
+                <Typography variant="subtitle1" fontWeight="bold">
                   차량 ID: {vehicleId}
                 </Typography>
-                <Typography>
-                  위도: {location.latitude}
+                <Typography variant="body2">
+                  위도: {location.latitude}, 경도: {location.longitude}
                 </Typography>
-                <Typography>
-                  경도: {location.longitude}
-                </Typography>
-                <Typography>
+                <Typography variant="body2">
                   마지막 업데이트: {new Date(location.timestamp).toLocaleString()}
                 </Typography>
-              </Paper>
-            );
-          })
+              </Box>
+            ))}
+          </Paper>
         ) : (
-          <Typography>
-            차량 위치 정보가 없습니다.
-          </Typography>
+          <Alert severity="info">
+            차량 위치 데이터가 없습니다.
+          </Alert>
         )}
       </Box>
     </Box>

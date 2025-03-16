@@ -20,18 +20,14 @@ import { styled } from '@mui/material/styles';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import StatusToggleButton from './StatusToggleButton';
 import { usePickup } from '../contexts/PickupContext';
-
-// 시간 형식 표준화 함수
-const normalizeClassTime = (time) => {
-  if (!time) return time;
-  
-  // 시간 형식 표준화
-  if (time === '16:40') return '16:30';
-  if (time === '17:40') return '17:30';
-  if (time === '18:40') return '18:30';
-  
-  return time;
-};
+import { normalizeClassTime, sortStudentsByArrivalTime } from '../utils/tableUtils';
+import { 
+  SectionHeader, 
+  ClickableRow, 
+  StyledHeaderCell, 
+  StyledTableCell,
+  MobileCard
+} from '../styles/commonStyles';
 
 // 요일 매핑
 const dayMap = {
@@ -44,65 +40,6 @@ const dayMap = {
   '일': 'sunday'
 };
 
-// 섹션 헤더를 위한 스타일 컴포넌트
-const SectionHeader = styled(Paper)(({ theme }) => ({
-  backgroundColor: theme.palette.primary.main,
-  color: 'white',
-  padding: theme.spacing(0.75, 2),
-  borderRadius: theme.shape.borderRadius,
-  display: 'flex',
-  alignItems: 'center',
-  marginBottom: 0,
-  boxShadow: 'none'
-}));
-
-// 테이블 헤더 셀 스타일
-const StyledHeaderCell = styled(TableCell)(({ theme, rightBorder, isArrival, width }) => ({
-  backgroundColor: isArrival ? '#e3f2fd' : '#fce4ec',
-  color: theme.palette.text.primary,
-  fontSize: '0.8rem',
-  padding: '8px 10px',
-  borderBottom: '1px solid #e0e0e0',
-  fontWeight: 'bold',
-  transition: 'all 0.3s ease',
-  width: width || 'auto',
-  minWidth: width || 'auto',
-  ...(rightBorder && {
-    borderRight: '2px solid #f0f0f0',
-  }),
-}));
-
-// 테이블 데이터 셀 스타일
-const StyledTableCell = styled(TableCell)(({ theme, highlight, rightBorder, isArrival, width }) => ({
-  fontSize: '0.8rem',
-  padding: '8px 10px',
-  borderBottom: '1px solid #f0f0f0',
-  backgroundColor: isArrival ? 'rgba(227, 242, 253, 0.3)' : 'rgba(252, 228, 236, 0.2)',
-  fontWeight: 'regular',
-  transition: 'all 0.3s ease',
-  width: width || 'auto',
-  minWidth: width || 'auto',
-  ...(rightBorder && {
-    borderRight: '2px solid #f0f0f0',
-  }),
-}));
-
-// 클릭 가능한 행 스타일
-const ClickableRow = styled(TableRow)(({ theme }) => ({
-  cursor: 'pointer',
-  '&:hover': {
-    backgroundColor: theme.palette.action.hover,
-  },
-  transition: 'background-color 0.2s ease',
-}));
-
-// 모바일 카드 컴포넌트
-const MobileStudentCard = styled(Card)(({ theme }) => ({
-  marginBottom: theme.spacing(2),
-  overflow: 'visible',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-}));
-
 // 학생 정보 섹션 컴포넌트
 const InfoSection = styled(Box)(({ theme }) => ({
   padding: theme.spacing(1, 2),
@@ -110,6 +47,9 @@ const InfoSection = styled(Box)(({ theme }) => ({
   alignItems: 'center',
   justifyContent: 'space-between',
   backgroundColor: theme.palette.background.default,
+  [theme.breakpoints.down('sm')]: {
+    padding: theme.spacing(0.75, 1.5),
+  },
 }));
 
 // StyledHeaderCell과 StyledTableCell에 대한 래퍼 컴포넌트 생성
@@ -124,6 +64,31 @@ const DataCell = ({ isarrival, rightborder, children, ...props }) => (
     {children}
   </StyledTableCell>
 );
+
+// 학생 정보 표시 컴포넌트
+const StudentInfo = ({ student }) => {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      <Typography variant="subtitle1" fontWeight="medium">
+        {student.name}
+        {student.shortId && (
+          <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+            (#{student.shortId})
+          </Typography>
+        )}
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        {student.school || '학교 정보 없음'}
+        {student.grade && ` ${student.grade}`}
+      </Typography>
+      {student.displayClassDays && student.displayClassDays.length > 0 && (
+        <Typography variant="body2" color="text.secondary">
+          수업: {student.displayClassDays.join(', ')}요일
+        </Typography>
+      )}
+    </Box>
+  );
+};
 
 // 차량 섹션 컴포넌트
 const VehicleSection = ({ classTime, classData, students, classStudents, maxHeight, onStudentSelect }) => {
@@ -252,10 +217,29 @@ const VehicleSection = ({ classTime, classData, students, classStudents, maxHeig
     // 요일별 등원시간이 있는 경우
     if (student.arrivalTimes && student.arrivalTimes[currentDay]) {
       arrivalTime = student.arrivalTimes[currentDay];
+      console.log(`${student.name}(${student.id}) - 요일별 등원시간 사용: ${arrivalTime}`);
     } 
     // 기존 arrivalTime 속성이 있는 경우
     else if (student.arrivalTime) {
       arrivalTime = student.arrivalTime;
+      console.log(`${student.name}(${student.id}) - 기본 등원시간 사용: ${arrivalTime}`);
+    } else {
+      console.log(`${student.name}(${student.id}) - 기본값 등원시간 사용: ${arrivalTime}`);
+    }
+    
+    // 시간 형식을 HH:MM으로 표준화
+    if (arrivalTime) {
+      // 시간 형식 표준화
+      const timeMatch = String(arrivalTime).match(/^(\d{1,2}):(\d{2})$/);
+      if (timeMatch) {
+        const hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        // 2자리로 포맷팅 (예: 9:30 -> 09:30)
+        arrivalTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        console.log(`${student.name}(${student.id}) - 등원시간 형식 표준화: ${arrivalTime}`);
+      } else {
+        console.warn(`${student.name}(${student.id}) - 잘못된 등원시간 형식: ${arrivalTime}`);
+      }
     }
     
     // 요일별 하원시간이 있는 경우
@@ -271,58 +255,22 @@ const VehicleSection = ({ classTime, classData, students, classStudents, maxHeig
     const hasArrivalInfo = arrivalLocation !== null && arrivalLocation !== undefined && arrivalLocation !== '';
     const hasDepartureInfo = departureLocation !== null && departureLocation !== undefined && departureLocation !== '';
     
+    // 차량 이용 여부 확인 (위치 정보가 '도보', '자차', '없음' 등인 경우 차량 이용 안함)
+    const isArrivalNoVehicle = !hasArrivalInfo || 
+      ['도보', '자차', '없음', '해당없음', '-'].includes(arrivalLocation);
+    const isDepartureNoVehicle = !hasDepartureInfo || 
+      ['도보', '자차', '없음', '해당없음', '-'].includes(departureLocation);
+    
+    console.log(`학생 ${student.name}(${student.id})의 최종 등원시간: ${arrivalTime}`);
     console.log(`학생 ID: ${student.id}, 이름: ${student.name}, ${currentDay}요일 등원위치: ${arrivalLocation}, ${currentDay}요일 하원위치: ${departureLocation}`);
     console.log(`학생 ID: ${student.id}, 이름: ${student.name}, ${currentDay}요일 등원시간: ${arrivalTime}, ${currentDay}요일 하원시간: ${departureTime}`);
     console.log(`차량 정보 존재 여부 - 등원: ${hasArrivalInfo}, 하원: ${hasDepartureInfo}`);
+    console.log(`차량 이용 여부 - 등원: ${!isArrivalNoVehicle}, 하원: ${!isDepartureNoVehicle}`);
     console.log(`등원 상태: ${arrivalStatus[student.id] ? '완료' : '대기중'}, 하원 상태: ${departureStatus[student.id] ? '완료' : '대기중'}`);
     
-    // 등원 위치 텍스트 설정
-    let arrivalLocationText = '차량탑승 안함';  // 기본값
-    let isArrivalNoVehicle = !hasArrivalInfo;
-    
-    if (hasArrivalInfo) {
-      // 1. 먼저 classData.locations에서 확인
-      if (classData && classData.locations && classData.locations[arrivalLocation]) {
-        arrivalLocationText = classData.locations[arrivalLocation];
-      } 
-      // 2. 다음으로 classTimeData.locations에서 확인
-      else if (classTimeData && classTimeData.locations && classTimeData.locations[arrivalLocation]) {
-        arrivalLocationText = classTimeData.locations[arrivalLocation];
-      }
-      // 3. 다음으로 전역 locations 객체에서 확인
-      else if (locations && locations[arrivalLocation]) {
-        arrivalLocationText = locations[arrivalLocation];
-      }
-      // 4. 그래도 없으면 위치 ID 표시 또는 직접 문자열 사용
-      else {
-        // 숫자인 경우 위치 ID로 표시, 문자열인 경우 그대로 사용
-        arrivalLocationText = typeof arrivalLocation === 'number' ? `위치 ${arrivalLocation}` : arrivalLocation;
-      }
-    }
-    
-    // 하원 위치 텍스트 설정
-    let departureLocationText = '차량탑승 안함';  // 기본값
-    let isDepartureNoVehicle = !hasDepartureInfo;
-    
-    if (hasDepartureInfo) {
-      // 1. 먼저 classData.locations에서 확인
-      if (classData && classData.locations && classData.locations[departureLocation]) {
-        departureLocationText = classData.locations[departureLocation];
-      } 
-      // 2. 다음으로 classTimeData.locations에서 확인
-      else if (classTimeData && classTimeData.locations && classTimeData.locations[departureLocation]) {
-        departureLocationText = classTimeData.locations[departureLocation];
-      }
-      // 3. 다음으로 전역 locations에서 확인
-      else if (locations && locations[departureLocation]) {
-        departureLocationText = locations[departureLocation];
-      }
-      // 4. 그래도 없으면 위치 ID 표시 또는 직접 문자열 사용
-      else {
-        // 숫자인 경우 위치 ID로 표시, 문자열인 경우 그대로 사용
-        departureLocationText = typeof departureLocation === 'number' ? `위치 ${departureLocation}` : departureLocation;
-      }
-    }
+    // 위치 텍스트 생성
+    const arrivalLocationText = arrivalLocation || '정보 없음';
+    const departureLocationText = departureLocation || '정보 없음';
     
     return {
       ...student,
@@ -333,195 +281,414 @@ const VehicleSection = ({ classTime, classData, students, classStudents, maxHeig
       arrivalLocationText,
       departureLocationText,
       hasArrivalInfo,
-      hasDepartureInfo
+      hasDepartureInfo,
+      isArrivalNoVehicle,
+      isDepartureNoVehicle
     };
   };
 
   // 학생 데이터 준비 및 정렬
   const preparedStudents = filteredStudents.map(prepareStudentData);
 
-  // 등원 시간 순으로 정렬
-  const sortedStudents = [...preparedStudents].sort((a, b) => {
-    // 등원 시간이 없는 경우 맨 뒤로 정렬
-    if (!a.arrivalTime) return 1;
-    if (!b.arrivalTime) return -1;
+  // 시간 문자열을 숫자(분)로 변환하는 유틸리티 함수 추가
+  const parseTimeToMinutes = (timeString) => {
+    if (!timeString) return 9999; // 시간이 없으면 맨 뒤로 정렬
+    
+    // 문자열 확인
+    if (typeof timeString !== 'string') {
+      console.warn(`시간이 문자열이 아님: ${timeString}, 타입: ${typeof timeString}`);
+      return 9999; // 문자열이 아니면 맨 뒤로 정렬
+    }
+    
+    // 시간 문자열 정규화 (공백 제거, 소문자 변환)
+    timeString = timeString.trim();
+    
+    // 정규식으로 HH:MM 형식인지 확인
+    let match = timeString.match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) {
+      // 다른 시간 형식 시도 (예: H:MM)
+      match = timeString.match(/^(\d{1}):(\d{2})$/);
+      if (!match) {
+        console.warn(`잘못된 시간 형식: ${timeString}`);
+        return 9999; // 잘못된 형식은 맨 뒤로 정렬
+      }
+    }
+    
+    const hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    
+    // 시간이 유효한지 확인
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      console.warn(`시간 범위 초과 또는 유효하지 않은 값: ${timeString}, 시간: ${hours}, 분: ${minutes}`);
+      return 9999; // 범위를 벗어난 값은 맨 뒤로 정렬
+    }
+    
+    // 시간을 분으로 변환
+    const totalMinutes = hours * 60 + minutes;
+    return totalMinutes;
+  };
 
-    // 시간 문자열을 비교하여 정렬
-    return a.arrivalTime.localeCompare(b.arrivalTime);
+  // 모든 학생의 시간 데이터를 미리 계산
+  const studentsWithMinutes = preparedStudents.map(student => {
+    const minutesValue = parseTimeToMinutes(student.arrivalTime);
+    return {
+      ...student,
+      arrivalTimeMinutes: minutesValue
+    };
   });
   
+  // 디버그: 변환된 시간 확인
+  console.log('=== 시간 변환 결과 ===');
+  studentsWithMinutes.forEach(student => {
+    console.log(`${student.name}(${student.id}) - ${student.arrivalTime} → ${student.arrivalTimeMinutes}분`);
+  });
+  console.log('=====================');
+  
+  // 분 단위로 정렬
+  const sortedStudents = sortStudentsByArrivalTime(studentsWithMinutes, currentDay);
+  
+  // 디버그: 최종 정렬 결과 출력
+  console.log('=== 최종 정렬 결과 ===');
+  sortedStudents.forEach((student, index) => {
+    console.log(`${index+1}. ${student.name}(${student.id}) - ${student.arrivalTime} (${student.arrivalTimeMinutes}분)`);
+  });
+  console.log('=====================');
+  
+  // 데이터 구조 디버깅
+  console.log('=== VehicleSection 데이터 구조 ===');
+  console.log(`클래스 시간: ${classTime}, 정규화된 시간: ${normalizedClassTime}`);
+  console.log(`클래스 데이터:`, classData);
+  console.log(`학생 데이터 수: ${(students || []).length + (classStudents || []).length}`);
+  console.log(`학생 데이터 키:`, students && students.length > 0 ? Object.keys(students[0]) : []);
+  console.log('=====================');
+  
   // PC 버전 테이블 렌더링
-  const renderDesktopTable = () => (
-    <TableContainer component={Paper} elevation={1} sx={{ mb: 3 }}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <HeaderCell isarrival="true" rightborder="true" width="65px" align="left">학생</HeaderCell>
-            <HeaderCell isarrival="true" width="60px" align="center">등원시간</HeaderCell>
-            <HeaderCell isarrival="true" width="150px" align="left">등원위치</HeaderCell>
-            <HeaderCell isarrival="true" rightborder="true" width="100px" align="center">등원확인</HeaderCell>
-            <HeaderCell width="60px" align="center">하원시간</HeaderCell>
-            <HeaderCell width="150px" align="left">하원위치</HeaderCell>
-            <HeaderCell width="100px" align="center">하원확인</HeaderCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {sortedStudents.map((student) => {
-            // 학생 데이터 준비
+  const renderDesktopTable = () => {
+    // 등원 서비스를 이용하는 학생 필터링
+    const arrivalStudents = sortedStudents.filter(student => 
+      student.hasArrivalInfo && !student.isArrivalNoVehicle
+    );
+    
+    // 하원 서비스를 이용하는 학생 필터링
+    const departureStudents = sortedStudents.filter(student => 
+      student.hasDepartureInfo && !student.isDepartureNoVehicle
+    );
+    
+    return (
+      <Grid container spacing={2}>
+        {/* 등원 테이블 */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden' }}>
+            <Box sx={{ bgcolor: '#e3f2fd', p: 1, px: 2 }}>
+              <Typography variant="subtitle2" fontWeight="bold">
+                등원 ({arrivalStudents.length}명)
+              </Typography>
+            </Box>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <HeaderCell isarrival="true" width="65px" align="left">학생</HeaderCell>
+                    <HeaderCell isarrival="true" width="60px" align="center">등원시간</HeaderCell>
+                    <HeaderCell isarrival="true" width="150px" align="left">등원위치</HeaderCell>
+                    <HeaderCell isarrival="true" width="80px" align="center">등원확인</HeaderCell>
+                    <HeaderCell isarrival="true" width="50px" align="center">수정</HeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {arrivalStudents.map((student) => {
+                    const studentData = student;
+                    
+                    return (
+                      <ClickableRow 
+                        key={`arrival-${student.id}`} 
+                        onClick={() => onStudentSelect && onStudentSelect(student)}
+                        hover
+                      >
+                        <DataCell isarrival="true">
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="body2" fontWeight="medium">
+                              {student.name}
+                            </Typography>
+                          </Box>
+                        </DataCell>
+                        <DataCell isarrival="true" align="center">
+                          {studentData.arrivalTime || '-'}
+                        </DataCell>
+                        <DataCell isarrival="true">
+                          {studentData.arrivalLocationText}
+                        </DataCell>
+                        <DataCell isarrival="true" align="center">
+                          <StatusToggleButton 
+                            status={arrivalStatus[student.id] || false}
+                            onChange={() => toggleArrivalStatus(student.id)}
+                            size="small"
+                          />
+                        </DataCell>
+                        <DataCell isarrival="true" align="center">
+                          <Button
+                            size="small"
+                            variant="text"
+                            color="primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStudentSelect && onStudentSelect(student);
+                            }}
+                          >
+                            수정
+                          </Button>
+                        </DataCell>
+                      </ClickableRow>
+                    );
+                  })}
+                  {arrivalStudents.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          등원 서비스를 이용하는 학생이 없습니다.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid>
+        
+        {/* 하원 테이블 */}
+        <Grid item xs={12} md={6}>
+          <Paper elevation={1} sx={{ mb: 3, overflow: 'hidden' }}>
+            <Box sx={{ bgcolor: '#fce4ec', p: 1, px: 2 }}>
+              <Typography variant="subtitle2" fontWeight="bold">
+                하원 ({departureStudents.length}명)
+              </Typography>
+            </Box>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <HeaderCell width="65px" align="left">학생</HeaderCell>
+                    <HeaderCell width="60px" align="center">하원시간</HeaderCell>
+                    <HeaderCell width="150px" align="left">하원위치</HeaderCell>
+                    <HeaderCell width="80px" align="center">하원확인</HeaderCell>
+                    <HeaderCell width="50px" align="center">수정</HeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {departureStudents.map((student) => {
+                    const studentData = student;
+                    
+                    return (
+                      <ClickableRow 
+                        key={`departure-${student.id}`} 
+                        onClick={() => onStudentSelect && onStudentSelect(student)}
+                        hover
+                      >
+                        <DataCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="body2" fontWeight="medium">
+                              {student.name}
+                            </Typography>
+                          </Box>
+                        </DataCell>
+                        <DataCell align="center">
+                          {studentData.departureTime || '-'}
+                        </DataCell>
+                        <DataCell>
+                          {studentData.departureLocationText}
+                        </DataCell>
+                        <DataCell align="center">
+                          <StatusToggleButton 
+                            status={departureStatus[student.id] || false}
+                            onChange={() => toggleDepartureStatus(student.id)}
+                            size="small"
+                          />
+                        </DataCell>
+                        <DataCell align="center">
+                          <Button
+                            size="small"
+                            variant="text"
+                            color="primary"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onStudentSelect && onStudentSelect(student);
+                            }}
+                          >
+                            수정
+                          </Button>
+                        </DataCell>
+                      </ClickableRow>
+                    );
+                  })}
+                  {departureStudents.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center" sx={{ py: 3 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          하원 서비스를 이용하는 학생이 없습니다.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Grid>
+      </Grid>
+    );
+  };
+  
+  // 모바일 버전 카드 렌더링
+  const renderMobileCards = () => {
+    // 등원 서비스를 이용하는 학생 필터링
+    const arrivalStudents = sortedStudents.filter(student => 
+      student.hasArrivalInfo && !student.isArrivalNoVehicle
+    );
+    
+    // 하원 서비스를 이용하는 학생 필터링
+    const departureStudents = sortedStudents.filter(student => 
+      student.hasDepartureInfo && !student.isDepartureNoVehicle
+    );
+    
+    return (
+      <Grid container spacing={2}>
+        {/* 등원 카드 섹션 */}
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ mb: 2, overflow: 'hidden' }}>
+            <Box sx={{ bgcolor: '#e3f2fd', p: 1, px: 2 }}>
+              <Typography variant="subtitle2" fontWeight="bold">
+                등원 ({arrivalStudents.length}명)
+              </Typography>
+            </Box>
+          </Paper>
+          
+          {arrivalStudents.map((student) => {
             const studentData = student;
             
             return (
-              <ClickableRow 
-                key={student.id} 
-                onClick={() => onStudentSelect && onStudentSelect(student)}
-                hover
-              >
-                <DataCell isarrival="true" rightborder="true">
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography variant="body2" fontWeight="medium">
-                      {student.name}
-                    </Typography>
-                  </Box>
-                </DataCell>
-                <DataCell isarrival="true" align="center">
-                  {studentData.arrivalTime || '-'}
-                </DataCell>
-                <DataCell isarrival="true">
-                  {studentData.arrivalLocationText}
-                </DataCell>
-                <DataCell isarrival="true" rightborder="true" align="center">
-                  <StatusToggleButton 
-                    status={arrivalStatus[student.id] || false}
-                    onChange={() => toggleArrivalStatus(student.id)}
-                    disabled={studentData.isArrivalNoVehicle}
-                    size="small"
-                  />
-                </DataCell>
-                <DataCell align="center">
-                  {studentData.departureTime || '-'}
-                </DataCell>
-                <DataCell>
-                  {studentData.departureLocationText}
-                </DataCell>
-                <DataCell align="center">
-                  <StatusToggleButton 
-                    status={departureStatus[student.id] || false}
-                    onChange={() => toggleDepartureStatus(student.id)}
-                    disabled={studentData.isDepartureNoVehicle}
-                    size="small"
-                  />
-                </DataCell>
-              </ClickableRow>
+              <MobileCard key={`arrival-${student.id}`} onClick={() => onStudentSelect && onStudentSelect(student)}>
+                <InfoSection>
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    {student.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {normalizedClassTime} 수업
+                  </Typography>
+                </InfoSection>
+                <Box sx={{ p: 1.5, backgroundColor: 'rgba(227, 242, 253, 0.3)' }}>
+                  <Grid container spacing={1} alignItems="center">
+                    <Grid item xs={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        등원시간
+                      </Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {studentData.arrivalTime || '-'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={5}>
+                      <Typography variant="body2" color="text.secondary">
+                        등원위치
+                      </Typography>
+                      <Typography variant="body2" fontWeight="medium" noWrap>
+                        {studentData.arrivalLocationText}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={3}>
+                      <StatusToggleButton 
+                        status={arrivalStatus[student.id] || false}
+                        onChange={() => toggleArrivalStatus(student.id)}
+                        size="small"
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              </MobileCard>
             );
           })}
-          {sortedStudents.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                <Typography variant="body2" color="text.secondary">
-                  이 수업 시간에 등록된 학생이 없습니다.
-                </Typography>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-  
-  // 모바일 버전 카드 렌더링
-  const renderMobileCards = () => (
-    <Box sx={{ mb: 3 }}>
-      {sortedStudents.map((student) => {
-        // 학생 데이터 준비
-        const studentData = student;
-        
-        return (
-          <MobileStudentCard key={student.id} onClick={() => onStudentSelect && onStudentSelect(student)}>
-            <InfoSection>
-              <Typography variant="subtitle1" fontWeight="medium">
-                {student.name}
-              </Typography>
+          {arrivalStudents.length === 0 && (
+            <Paper elevation={1} sx={{ p: 3, textAlign: 'center', mb: 3 }}>
               <Typography variant="body2" color="text.secondary">
-                {normalizedClassTime} 수업
+                등원 서비스를 이용하는 학생이 없습니다.
               </Typography>
-            </InfoSection>
-            <Divider />
-            <Box sx={{ p: 1.5, backgroundColor: 'rgba(227, 242, 253, 0.3)' }}>
-              <Grid container spacing={1} alignItems="center">
-                <Grid item xs={4}>
-                  <Typography variant="body2" color="text.secondary">
-                    등원시간
-                  </Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {studentData.arrivalTime || '-'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={5}>
-                  <Typography variant="body2" color="text.secondary">
-                    등원위치
-                  </Typography>
-                  <Typography variant="body2" fontWeight="medium" noWrap>
-                    {studentData.arrivalLocationText}
-                  </Typography>
-                </Grid>
-                <Grid item xs={3}>
-                  <StatusToggleButton 
-                    status={arrivalStatus[student.id] || false}
-                    onChange={() => toggleArrivalStatus(student.id)}
-                    disabled={studentData.isArrivalNoVehicle}
-                    size="small"
-                  />
-                </Grid>
-              </Grid>
+            </Paper>
+          )}
+        </Grid>
+        
+        {/* 하원 카드 섹션 */}
+        <Grid item xs={12}>
+          <Paper elevation={0} sx={{ mb: 2, overflow: 'hidden' }}>
+            <Box sx={{ bgcolor: '#fce4ec', p: 1, px: 2 }}>
+              <Typography variant="subtitle2" fontWeight="bold">
+                하원 ({departureStudents.length}명)
+              </Typography>
             </Box>
-            <Divider />
-            <Box sx={{ p: 1.5, backgroundColor: 'rgba(252, 228, 236, 0.2)' }}>
-              <Grid container spacing={1} alignItems="center">
-                <Grid item xs={4}>
+          </Paper>
+          
+          {departureStudents.map((student) => {
+            const studentData = student;
+            
+            return (
+              <MobileCard key={`departure-${student.id}`} onClick={() => onStudentSelect && onStudentSelect(student)}>
+                <InfoSection>
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    {student.name}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    하원시간
+                    {normalizedClassTime} 수업
                   </Typography>
-                  <Typography variant="body2" fontWeight="medium">
-                    {studentData.departureTime || '-'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={5}>
-                  <Typography variant="body2" color="text.secondary">
-                    하원위치
-                  </Typography>
-                  <Typography variant="body2" fontWeight="medium" noWrap>
-                    {studentData.departureLocationText}
-                  </Typography>
-                </Grid>
-                <Grid item xs={3}>
-                  <StatusToggleButton 
-                    status={departureStatus[student.id] || false}
-                    onChange={() => toggleDepartureStatus(student.id)}
-                    disabled={studentData.isDepartureNoVehicle}
-                    size="small"
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-          </MobileStudentCard>
-        );
-      })}
-      {sortedStudents.length === 0 && (
-        <Paper elevation={1} sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            이 수업 시간에 등록된 학생이 없습니다.
-          </Typography>
-        </Paper>
-      )}
-    </Box>
-  );
+                </InfoSection>
+                <Box sx={{ p: 1.5, backgroundColor: 'rgba(252, 228, 236, 0.2)' }}>
+                  <Grid container spacing={1} alignItems="center">
+                    <Grid item xs={4}>
+                      <Typography variant="body2" color="text.secondary">
+                        하원시간
+                      </Typography>
+                      <Typography variant="body2" fontWeight="medium">
+                        {studentData.departureTime || '-'}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={5}>
+                      <Typography variant="body2" color="text.secondary">
+                        하원위치
+                      </Typography>
+                      <Typography variant="body2" fontWeight="medium" noWrap>
+                        {studentData.departureLocationText}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={3}>
+                      <StatusToggleButton 
+                        status={departureStatus[student.id] || false}
+                        onChange={() => toggleDepartureStatus(student.id)}
+                        size="small"
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              </MobileCard>
+            );
+          })}
+          {departureStudents.length === 0 && (
+            <Paper elevation={1} sx={{ p: 3, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                하원 서비스를 이용하는 학생이 없습니다.
+              </Typography>
+            </Paper>
+          )}
+        </Grid>
+      </Grid>
+    );
+  };
   
   return (
     <Box sx={{ mb: 3 }}>
       <SectionHeader>
         <DirectionsBusIcon sx={{ mr: 1 }} />
         <Typography variant="subtitle1" fontWeight="medium">
-          {normalizedClassTime} 수업 ({sortedStudents.length}명)
+          {normalizedClassTime} 수업 (차량 이용: {sortedStudents.filter(student => 
+            (student.hasArrivalInfo && !student.isArrivalNoVehicle) || 
+            (student.hasDepartureInfo && !student.isDepartureNoVehicle)
+          ).length}명)
         </Typography>
       </SectionHeader>
       

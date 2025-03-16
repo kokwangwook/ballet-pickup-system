@@ -14,7 +14,7 @@ import {
   Snackbar,
   Alert
 } from '@mui/material';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { usePickup } from '../contexts/PickupContext';
@@ -22,6 +22,7 @@ import StudentForm from './StudentForm';
 import StudentSearch from './StudentSearch';
 
 const Layout = ({ children }) => {
+  const location = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchDialogOpen, setSearchDialogOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
@@ -35,7 +36,7 @@ const Layout = ({ children }) => {
   const { allStudents } = usePickup();
 
   // 퇴원한 학생 목록 가져오기
-  const withdrawnStudents = allStudents.filter(student => student.isActive === false);
+  const withdrawnStudents = allStudents ? allStudents.filter(student => student.isActive === false) : [];
 
   // 메뉴 열기
   const handleMenuOpen = (event) => {
@@ -79,6 +80,19 @@ const Layout = ({ children }) => {
     handleMenuClose();
   };
 
+  // 네비게이션 항목 정의
+  const navItems = [
+    { path: '/', label: '학생관리' },
+    { path: '/parent', label: '학부모페이지' },
+    { path: '/templates', label: '메시지템플릿' },
+    { path: '/notifications', label: '알림이력' },
+    { path: '/settings', label: '알림설정' },
+    { path: '/driver', label: '운전자앱' },
+    { path: '/vehicle-tracker', label: '차량위치' },
+    { path: '/test-layout', label: '새 레이아웃 테스트' },
+    { path: '/buttons', label: '버튼예제' }
+  ];
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static">
@@ -86,70 +100,24 @@ const Layout = ({ children }) => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             발레학원픽업시스템
           </Typography>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/"
-            sx={{ mr: 1 }}
-          >
-            학생관리
-          </Button>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/parent"
-            sx={{ mr: 1 }}
-          >
-            학부모페이지
-          </Button>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/templates"
-            sx={{ mr: 1 }}
-          >
-            메시지템플릿
-          </Button>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/notifications"
-            sx={{ mr: 1 }}
-          >
-            알림이력
-          </Button>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/settings"
-            sx={{ mr: 1 }}
-          >
-            알림설정
-          </Button>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/driver"
-            sx={{ mr: 1 }}
-          >
-            운전자앱
-          </Button>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/vehicle-tracker"
-            sx={{ mr: 1 }}
-          >
-            차량위치
-          </Button>
-          <Button 
-            color="inherit" 
-            component={Link}
-            to="/buttons"
-            sx={{ mr: 1 }}
-          >
-            버튼예제
-          </Button>
+          
+          {/* 네비게이션 항목 렌더링 */}
+          {navItems.map((item) => (
+            <Button 
+              key={item.path}
+              color="inherit" 
+              component={Link}
+              to={item.path}
+              sx={{ 
+                mr: 1,
+                fontWeight: location.pathname === item.path ? 'bold' : 'normal',
+                borderBottom: location.pathname === item.path ? '2px solid white' : 'none'
+              }}
+            >
+              {item.label}
+            </Button>
+          ))}
+          
           <Button 
             color="inherit" 
             startIcon={<PersonAddIcon />}
@@ -240,15 +208,43 @@ const Layout = ({ children }) => {
         open={snackbarOpen} 
         autoHideDuration={6000}
         onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setSnackbarOpen(false)} 
-          severity="success" 
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={() => setSnackbarOpen(false)} severity="success">
           {snackbarMessage}
         </Alert>
       </Snackbar>
+
+      {/* 퇴원 학생 목록 다이얼로그 */}
+      <Dialog
+        open={withdrawnStudentsDialogOpen}
+        onClose={() => setWithdrawnStudentsDialogOpen(false)}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>
+          퇴원 학생 목록
+        </DialogTitle>
+        <DialogContent>
+          {withdrawnStudents && withdrawnStudents.length > 0 ? (
+            <Box>
+              {/* 퇴원 학생 목록 내용 */}
+              {withdrawnStudents.map(student => (
+                <Box key={student.id} sx={{ mb: 2, p: 2, border: '1px solid #eee', borderRadius: 1 }}>
+                  <Typography variant="subtitle1">{student.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    ID: {student.id}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <Typography variant="body1" sx={{ p: 2 }}>
+              퇴원한 학생이 없습니다.
+            </Typography>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

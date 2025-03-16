@@ -28,103 +28,204 @@ const notion = new Client({
 });
 
 /**
- * 노션 데이터베이스에서 학생 데이터를 가져옵니다.
+ * Notion API 서비스 모듈
+ * Notion 데이터베이스에서 학생 및 수업 정보를 가져오고 관리하는 함수들을 제공합니다.
+ */
+
+/**
+ * Notion API에서 학생 데이터를 가져오는 함수
+ * @returns {Promise<Array>} 학생 목록
  */
 export const fetchStudentsFromNotion = async () => {
   try {
-    // 배포 환경에서도 작동하도록 URL을 완전한 경로로 구성
-    const baseUrl = window.location.origin;
-    const url = `${baseUrl}/api/notion`;
-    console.log("API 호출 URL:", url);
-    
-    const response = await fetch(url);
+    console.log("Notion API에서 학생 데이터를 불러오는 중...");
+    const response = await fetch("/api/notion");
     
     if (!response.ok) {
-      throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
+      throw new Error(`API 요청 실패: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    console.log("API 응답 데이터:", data);
-    console.log("데이터 길이:", data.length);
-    console.log("첫 번째 학생 데이터:", data.length > 0 ? data[0] : "학생 데이터 없음");
     
-    // 서버 응답은 성공했지만 데이터가 비어있는 경우
-    if (data.length === 0) {
-      console.warn("노션 데이터베이스에서 학생 정보를 찾을 수 없습니다. 선택한 날짜에 데이터가 있는지 확인하세요.");
+    // 데이터가 비어있는지 확인
+    if (!data || !Array.isArray(data.results) || data.results.length === 0) {
+      console.warn("Notion에서 받은 학생 데이터가 없습니다.");
+      return [];
     }
+
+    console.log(`Notion에서 ${data.results.length}명의 학생 데이터를 받았습니다.`);
+
+    // 학생 데이터 정보를 처리하여 필요한 정보만 추출
+    const processedStudents = data.results.map(student => {
+      // properties 확인
+      if (!student.properties) {
+        console.warn("학생 데이터에 properties가 없습니다:", student);
+        return null;
+      }
+      
+      const properties = student.properties;
+      
+      // 필요한 속성들이 있는지 확인
+      const hasName = properties.Name && properties.Name.title && properties.Name.title.length > 0;
+      const hasClassTime = properties.ClassTime && properties.ClassTime.rich_text && properties.ClassTime.rich_text.length > 0;
+      const shortId = properties.ShortId?.number || Math.floor(Math.random() * 100); // ShortId가 없으면 임의의 번호 생성
+      
+      if (!hasName) {
+        console.warn("학생 이름이 없습니다:", student);
+        return null;
+      }
+      
+      const name = hasName ? properties.Name.title[0].plain_text : "이름 없음";
+      
+      // 클래스 시간 추출 (여러 형식 지원)
+      let classTimes = [];
+      
+      if (hasClassTime) {
+        const classTimeText = properties.ClassTime.rich_text[0].plain_text;
+        
+        // 쉼표, 공백, 그리고 기타 구분자로 나눔
+        classTimes = classTimeText.split(/[,;/\s]+/).filter(time => time.trim() !== '');
+        
+        // 정규표현식을 사용하여 시간 형식 (예: "10:00", "14:30") 추출
+        const timePattern = /\d{1,2}:\d{2}/g;
+        const extractedTimes = classTimeText.match(timePattern);
+        
+        if (extractedTimes) {
+          // 추출된 시간이 있으면 기존 배열에 추가 (중복 제거)
+          extractedTimes.forEach(time => {
+            if (!classTimes.includes(time)) {
+              classTimes.push(time);
+            }
+          });
+        }
+      } else {
+        console.warn(`학생 ${name}의 수업 시간 정보가 없습니다.`);
+        // 임시 조치: 기본 수업 시간 할당
+        classTimes = ["15:30", "16:30", "17:30", "18:30"];
+      }
+      
+      // 처리된 학생 데이터 객체 생성
+      return {
+        id: student.id,
+        name: name,
+        shortNumber: String(shortId),
+        classes: classTimes,
+        isActive: true // 모든 학생을 활성 상태로 설정
+      };
+    }).filter(student => student !== null); // null 값 제거
     
-    return data;
+    return processedStudents;
   } catch (error) {
-    console.error('노션에서 데이터를 가져오는 중 오류가 발생했습니다:', error);
+    console.error("Notion에서 학생 데이터 가져오기 오류:", error);
     throw error;
   }
 };
 
 /**
- * 노션 데이터베이스의 특정 학생 상태를 업데이트합니다.
+ * Notion API에서 수업 정보를 가져오는 함수
+ * @returns {Promise<Object>} 수업 정보
  */
-export const updateStudentStatusInNotion = async (pageId, property, status) => {
+export const fetchClassInfoFromNotion = async () => {
   try {
-    // 배포 환경에서도 작동하도록 URL을 완전한 경로로 구성
-    const baseUrl = window.location.origin;
-    const url = `${baseUrl}/api/update-status`;
-    console.log("상태 업데이트 API 호출 URL:", url);
+    console.log("Notion API에서 수업 정보를 불러오는 중...");
+    const response = await fetch("/api/notion/class-info");
     
-    const response = await fetch(url, {
-      method: 'POST',
+    if (!response.ok) {
+      throw new Error(`API 요청 실패: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data || !data.classInfo) {
+      console.warn("Notion에서 받은 수업 정보가 없습니다.");
+      return getDefaultClassInfo();
+    }
+    
+    return data.classInfo;
+  } catch (error) {
+    console.error("Notion에서 수업 정보 가져오기 오류:", error);
+    return getDefaultClassInfo();
+  }
+};
+
+/**
+ * Notion API를 통해 학생 상태를 업데이트하는 함수
+ * @param {string} studentId 학생 ID
+ * @param {string} statusType 상태 유형 ('등원 상태' 또는 '하원 상태')
+ * @param {boolean} status 상태 값
+ * @returns {Promise<Object>} 업데이트 결과
+ */
+export const updateStudentStatusInNotion = async (studentId, statusType, status) => {
+  try {
+    console.log(`Notion API를 통해 학생 ${studentId}의 ${statusType}를 ${status}로 업데이트 중...`);
+    
+    const response = await fetch(`/api/notion/student/${studentId}/status`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        pageId,
-        property,
+        statusType,
         status
-      })
+      }),
     });
     
     if (!response.ok) {
-      throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
+      throw new Error(`API 요청 실패: ${response.status}`);
     }
     
     const data = await response.json();
-    return data.success;
+    return data;
   } catch (error) {
-    console.error('노션 데이터 업데이트 중 오류가 발생했습니다:', error);
+    console.error(`Notion에서 학생 상태 업데이트 오류:`, error);
     throw error;
   }
 };
 
 /**
- * 노션 데이터베이스에서 수업 정보 및 위치 데이터를 가져옵니다.
+ * 기본 수업 정보를 반환하는 함수
+ * @returns {Object} 기본 수업 정보
  */
-export const fetchClassInfoFromNotion = async () => {
-  try {
-    // 배포 환경에서도 작동하도록 URL을 완전한 경로로 구성
-    const baseUrl = window.location.origin;
-    const url = `${baseUrl}/api/class-info`;
-    console.log("수업 정보 API 호출 URL:", url);
-    
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
+function getDefaultClassInfo() {
+  return {
+    "15:30": {
+      startTime: "15:30",
+      endTime: "16:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    },
+    "16:30": {
+      startTime: "16:30",
+      endTime: "17:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    },
+    "17:30": {
+      startTime: "17:30",
+      endTime: "18:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
+    },
+    "18:30": {
+      startTime: "18:30",
+      endTime: "19:30",
+      locations: {
+        1: "학원 앞",
+        2: "공원 입구",
+        3: "중앙역"
+      }
     }
-    
-    const data = await response.json();
-    console.log("수업 정보 API 응답 데이터:", data);
-    console.log("수업 시간 항목 수:", Object.keys(data).length);
-    
-    // 서버 응답은 성공했지만 데이터가 비어있는 경우
-    if (Object.keys(data).length === 0) {
-      console.warn("노션 데이터베이스에서 수업 정보를 찾을 수 없습니다.");
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('노션에서 수업 정보를 가져오는 중 오류가 발생했습니다:', error);
-    throw error;
-  }
-};
+  };
+}
 
 export default {
   fetchStudentsFromNotion,

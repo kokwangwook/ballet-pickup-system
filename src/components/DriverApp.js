@@ -1,350 +1,382 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Paper, Button, CircularProgress, Alert, TextField, Switch, FormControlLabel } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Paper, 
+  Button, 
+  CircularProgress, 
+  TextField,
+  Alert,
+  Grid,
+  Switch,
+  FormControlLabel,
+  Divider
+} from '@mui/material';
+import SendIcon from '@mui/icons-material/Send';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import BugReportIcon from '@mui/icons-material/BugReport';
+
+// 테스트용 위치 데이터
+const TEST_LOCATIONS = [
+  {
+    name: '나주 혁신도시 호수공원',
+    data: {
+      latitude: 35.0175,
+      longitude: 126.7873,
+      accuracy: 10,
+      timestamp: new Date().toISOString()
+    }
+  },
+  {
+    name: '나주 시내',
+    data: {
+      latitude: 35.0159,
+      longitude: 126.7192,
+      accuracy: 10,
+      timestamp: new Date().toISOString()
+    }
+  },
+  {
+    name: '광주 송정역',
+    data: {
+      latitude: 35.1396,
+      longitude: 126.7953,
+      accuracy: 10,
+      timestamp: new Date().toISOString()
+    }
+  }
+];
 
 const DriverApp = () => {
+  const [vehicleId, setVehicleId] = useState('');
   const [location, setLocation] = useState(null);
-  const [error, setError] = useState(null);
+  const [isTracking, setIsTracking] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [autoUpdate, setAutoUpdate] = useState(false);
-  const [vehicleId, setVehicleId] = useState('vehicle1');
-  const [updateInterval, setUpdateInterval] = useState(10); // 초 단위
-  const [lastUpdateTime, setLastUpdateTime] = useState(null);
-  const [permissionStatus, setPermissionStatus] = useState('prompt');
-  const watchIdRef = useRef(null);
-  const intervalRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [watchId, setWatchId] = useState(null);
+  const [lastUpdate, setLastUpdate] = useState(null);
 
-  // 위치 정보 권한 상태 확인
+  // 컴포넌트 언마운트 시 위치 추적 중지
   useEffect(() => {
-    if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions.query({ name: 'geolocation' })
-        .then(status => {
-          setPermissionStatus(status.state);
-          status.onchange = () => {
-            setPermissionStatus(status.state);
-          };
-        });
-    }
-  }, []);
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [watchId]);
 
-  // 위치 정보 가져오기
-  const getLocation = () => {
-    if (!navigator.geolocation) {
-      setError('이 브라우저에서는 위치 정보를 지원하지 않습니다.');
-      return;
-    }
-
+  // 현재 위치 가져오기
+  const getCurrentLocation = () => {
     setLoading(true);
     setError(null);
-
+    
+    if (!navigator.geolocation) {
+      setError('브라우저가 위치 정보를 지원하지 않습니다.');
+      setLoading(false);
+      return;
+    }
+    
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const locationData = {
+        const newLocation = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
           timestamp: new Date().toISOString()
         };
-        setLocation(locationData);
-        setLastUpdateTime(new Date().toLocaleTimeString());
+        
+        setLocation(newLocation);
         setLoading(false);
-
-        if (vehicleId) {
-          sendLocationToServer(locationData);
-        } else {
-          setError('차량 ID를 입력해주세요.');
-        }
+        setSuccess('현재 위치를 성공적으로 가져왔습니다.');
+        
+        // 3초 후 성공 메시지 제거
+        setTimeout(() => setSuccess(null), 3000);
       },
-      (error) => {
+      (err) => {
+        console.error('위치 정보 가져오기 오류:', err);
+        setError(`위치 정보를 가져오는데 실패했습니다: ${err.message}`);
         setLoading(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setError('위치 정보 접근 권한이 거부되었습니다.');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setError('위치 정보를 사용할 수 없습니다.');
-            break;
-          case error.TIMEOUT:
-            setError('위치 정보 요청 시간이 초과되었습니다.');
-            break;
-          default:
-            setError('알 수 없는 오류가 발생했습니다.');
-            break;
-        }
       },
-      { enableHighAccuracy: true }
+      { 
+        enableHighAccuracy: true, 
+        timeout: 10000, 
+        maximumAge: 0 
+      }
     );
   };
 
-  // 위치 정보 서버로 전송
-  const sendLocationToServer = async (locationData) => {
+  // 위치 추적 시작/중지
+  const toggleTracking = () => {
+    if (isTracking) {
+      // 추적 중지
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+        setWatchId(null);
+      }
+      setIsTracking(false);
+      setSuccess('위치 추적이 중지되었습니다.');
+      setTimeout(() => setSuccess(null), 3000);
+    } else {
+      // 추적 시작
+      if (!navigator.geolocation) {
+        setError('브라우저가 위치 정보를 지원하지 않습니다.');
+        return;
+      }
+      
+      const id = navigator.geolocation.watchPosition(
+        (position) => {
+          const newLocation = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: new Date().toISOString()
+          };
+          
+          setLocation(newLocation);
+          setLastUpdate(new Date());
+          
+          // 차량 ID가 입력된 경우 자동으로 서버에 위치 전송
+          if (vehicleId) {
+            sendLocationToServer(vehicleId, newLocation);
+          }
+        },
+        (err) => {
+          console.error('위치 추적 오류:', err);
+          setError(`위치 추적 중 오류가 발생했습니다: ${err.message}`);
+          setIsTracking(false);
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 10000, 
+          maximumAge: 0 
+        }
+      );
+      
+      setWatchId(id);
+      setIsTracking(true);
+      setSuccess('위치 추적이 시작되었습니다.');
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
+  // 위치 정보 서버에 전송
+  const sendLocationToServer = async (id, locationData) => {
+    if (!id || !locationData) {
+      setError('차량 ID와 위치 정보가 필요합니다.');
+      return;
+    }
+    
     try {
-      const response = await fetch(`/api/vehicles/${vehicleId}/location`, {
+      setLoading(true);
+      
+      const response = await fetch('/api/vehicles/update-location', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(locationData),
+        body: JSON.stringify({
+          vehicleId: id,
+          location: locationData
+        }),
       });
-
+      
       if (!response.ok) {
-        throw new Error('서버에 위치 정보 전송 실패');
+        throw new Error('서버에 위치 정보를 전송하는데 실패했습니다.');
       }
-
-      setLastUpdateTime(new Date().toLocaleTimeString());
+      
+      setSuccess('위치 정보가 성공적으로 서버에 전송되었습니다.');
+      setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       console.error('위치 정보 전송 오류:', err);
-      setError(`위치 정보 전송 실패: ${err.message}`);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 자동 업데이트 시작
-  const startAutoUpdate = () => {
-    if (watchIdRef.current) return;
-
-    if (navigator.geolocation) {
-      try {
-        // 위치 모니터링
-        watchIdRef.current = navigator.geolocation.watchPosition(
-          (position) => {
-            const newLocation = {
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-              accuracy: position.coords.accuracy,
-              timestamp: new Date().toISOString()
-            };
-            setLocation(newLocation);
-          },
-          (err) => {
-            // 보안 오류 처리
-            if (err.code === 1) {
-              setError('위치 정보 권한이 거부되었습니다. 브라우저 설정에서 위치 정보 접근을 허용해주세요.');
-            } else if (err.code === 2) {
-              setError('위치 정보를 가져올 수 없습니다. GPS 신호가 약하거나 없습니다.');
-            } else if (err.code === 3) {
-              setError('위치 정보 요청 시간이 초과되었습니다.');
-            } else {
-              setError(`위치 정보 오류: ${err.message}`);
-              
-              // 보안 오류 (Only secure origins are allowed) 처리
-              if (err.message.includes('Only secure origins are allowed')) {
-                setError('보안 연결(HTTPS)에서만 위치 정보를 사용할 수 있습니다. HTTPS로 접속해주세요.');
-              }
-            }
-            stopAutoUpdate();
-          },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
-        );
-
-        // 서버로 주기적으로 전송
-        intervalRef.current = setInterval(() => {
-          if (location) {
-            sendLocationToServer({
-              ...location,
-              timestamp: new Date().toISOString()
-            });
-          }
-        }, updateInterval * 1000);
-      } catch (e) {
-        setError(`위치 정보 모니터링 중 오류가 발생했습니다: ${e.message}`);
-        stopAutoUpdate();
-      }
-    } else {
-      setError('이 브라우저에서는 위치 정보를 지원하지 않습니다.');
+  // 수동으로 위치 정보 전송
+  const handleSendLocation = () => {
+    if (!vehicleId) {
+      setError('차량 ID를 입력해주세요.');
+      return;
     }
+    
+    if (!location) {
+      setError('위치 정보가 없습니다. 먼저 위치를 가져와주세요.');
+      return;
+    }
+    
+    sendLocationToServer(vehicleId, location);
   };
 
-  // 자동 업데이트 중지
-  const stopAutoUpdate = () => {
-    if (watchIdRef.current) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
+  // 테스트 위치 전송
+  const sendTestLocation = (testLocation) => {
+    if (!vehicleId) {
+      setError('차량 ID를 입력해주세요.');
+      return;
     }
-
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
-
-  // 자동 업데이트 토글
-  const handleAutoUpdateToggle = (event) => {
-    const isChecked = event.target.checked;
-    setAutoUpdate(isChecked);
-
-    if (isChecked) {
-      startAutoUpdate();
-    } else {
-      stopAutoUpdate();
-    }
-  };
-
-  // 업데이트 간격 변경
-  const handleIntervalChange = (event) => {
-    const newInterval = parseInt(event.target.value, 10);
-    if (newInterval > 0) {
-      setUpdateInterval(newInterval);
-      
-      // 자동 업데이트 중이면 재시작
-      if (autoUpdate) {
-        stopAutoUpdate();
-        startAutoUpdate();
-      }
-    }
-  };
-
-  // 위치 정보 권한 요청 함수
-  const requestLocationPermission = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setPermissionStatus('granted');
-          // 권한이 허용되면 위치 정보 가져오기
-          getLocation();
-        },
-        (error) => {
-          if (error.code === error.PERMISSION_DENIED) {
-            setPermissionStatus('denied');
-            setError('위치 정보 접근 권한이 거부되었습니다. 브라우저 설정에서 권한을 허용해주세요.');
-          }
-        }
-      );
-    }
-  };
-
-  // 컴포넌트 언마운트 시 자동 업데이트 중지
-  useEffect(() => {
-    return () => {
-      stopAutoUpdate();
+    
+    // 타임스탬프 업데이트
+    const locationWithCurrentTime = {
+      ...testLocation,
+      timestamp: new Date().toISOString()
     };
-  }, []);
+    
+    setLocation(locationWithCurrentTime);
+    sendLocationToServer(vehicleId, locationWithCurrentTime);
+  };
 
   return (
     <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        운전자 앱
-      </Typography>
-
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          차량 위치 전송
+      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h4" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+          <DirectionsCarIcon fontSize="large" sx={{ mr: 1 }} />
+          운전자 앱
         </Typography>
-
-        <Box mb={2}>
-          <TextField
-            label="차량 ID"
-            value={vehicleId}
-            onChange={(e) => setVehicleId(e.target.value)}
-            fullWidth
-            margin="normal"
-          />
-        </Box>
-
-        <Box mb={2}>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={autoUpdate}
-                onChange={handleAutoUpdateToggle}
-                color="primary"
-              />
-            }
-            label="자동 위치 업데이트"
-          />
-        </Box>
-
-        {autoUpdate && (
-          <Box mb={2}>
-            <TextField
-              label="업데이트 간격 (초)"
-              type="number"
-              value={updateInterval}
-              onChange={handleIntervalChange}
-              inputProps={{ min: 1 }}
-              fullWidth
-              margin="normal"
-            />
-          </Box>
-        )}
-
-        <Box mb={2}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={getLocation}
-            disabled={loading || permissionStatus === 'denied'}
-            fullWidth
-          >
-            {loading ? <CircularProgress size={24} /> : '현재 위치 전송'}
-          </Button>
-        </Box>
-
-        {error && (
-          <Box mb={2}>
-            <Alert severity="error">{error}</Alert>
-          </Box>
-        )}
-
-        {location && (
-          <Box mt={2}>
-            <Typography variant="subtitle1" gutterBottom>
-              현재 위치:
+        <Typography variant="body1" color="text.secondary" paragraph>
+          차량 위치 정보를 실시간으로 전송하는 앱입니다. 차량 ID를 입력하고 위치 추적을 시작하세요.
+        </Typography>
+      </Paper>
+      
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              차량 정보
             </Typography>
-            <Typography>위도: {location.latitude}</Typography>
-            <Typography>경도: {location.longitude}</Typography>
-            <Typography>정확도: {location.accuracy}m</Typography>
-            {lastUpdateTime && (
-              <Typography>마지막 업데이트: {lastUpdateTime}</Typography>
+            
+            <TextField
+              label="차량 ID"
+              variant="outlined"
+              fullWidth
+              value={vehicleId}
+              onChange={(e) => setVehicleId(e.target.value)}
+              margin="normal"
+              helperText="차량 식별을 위한 고유 ID를 입력하세요"
+            />
+            
+            <Box mt={2}>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                startIcon={<MyLocationIcon />}
+                onClick={getCurrentLocation}
+                disabled={loading}
+                sx={{ mr: 2 }}
+              >
+                현재 위치 가져오기
+              </Button>
+              
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={isTracking}
+                    onChange={toggleTracking}
+                    color="primary"
+                  />
+                }
+                label="실시간 위치 추적"
+              />
+            </Box>
+            
+            <Box mt={2}>
+              <Button 
+                variant="contained" 
+                color="secondary" 
+                startIcon={<SendIcon />}
+                onClick={handleSendLocation}
+                disabled={loading || !location || !vehicleId}
+                fullWidth
+              >
+                위치 정보 전송
+              </Button>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+            
+            <Box mt={2}>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                <BugReportIcon fontSize="small" sx={{ mr: 1 }} />
+                테스트 위치 전송
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                테스트를 위해 미리 정의된 위치 정보를 전송할 수 있습니다.
+              </Typography>
+              
+              <Grid container spacing={2} mt={1}>
+                {TEST_LOCATIONS.map((loc, index) => (
+                  <Grid item xs={12} sm={4} key={index}>
+                    <Button
+                      variant="outlined"
+                      color="info"
+                      fullWidth
+                      onClick={() => sendTestLocation(loc.data)}
+                      disabled={!vehicleId || loading}
+                    >
+                      {loc.name}
+                    </Button>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </Paper>
+        </Grid>
+        
+        <Grid item xs={12} md={6}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              현재 위치 정보
+            </Typography>
+            
+            {loading && (
+              <Box display="flex" justifyContent="center" my={3}>
+                <CircularProgress />
+              </Box>
             )}
-          </Box>
-        )}
-      </Paper>
-
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          사용 방법
-        </Typography>
-        <Typography paragraph>
-          1. 차량 ID를 입력합니다 (기본값: vehicle1).
-        </Typography>
-        <Typography paragraph>
-          2. "자동 위치 업데이트"를 켜면 설정한 간격으로 위치가 자동 전송됩니다.
-        </Typography>
-        <Typography paragraph>
-          3. 수동으로 위치를 전송하려면 "현재 위치 전송" 버튼을 클릭합니다.
-        </Typography>
-        <Typography paragraph>
-          4. 위치 정보 권한을 요청하면 "허용"을 선택해주세요.
-        </Typography>
-        <Typography paragraph>
-          5. 이 앱은 백그라운드에서도 실행되어야 하므로, 화면을 켜둔 상태로 유지해주세요.
-        </Typography>
-      </Paper>
-
-      {/* 위치 정보 권한 상태 및 요청 버튼 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          위치 정보 권한 상태: {
-            permissionStatus === 'granted' ? '허용됨' :
-            permissionStatus === 'denied' ? '거부됨' : '미결정'
-          }
-        </Typography>
-        
-        {permissionStatus !== 'granted' && (
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={requestLocationPermission}
-            sx={{ mt: 1 }}
-          >
-            위치 정보 접근 허용하기
-          </Button>
-        )}
-        
-        {permissionStatus === 'denied' && (
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            위치 정보 접근이 거부되었습니다. 브라우저 설정에서 권한을 허용하거나, 주소창의 자물쇠 아이콘을 클릭하여 권한을 변경해주세요.
-          </Alert>
-        )}
-      </Box>
+            
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+            
+            {success && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                {success}
+              </Alert>
+            )}
+            
+            {location ? (
+              <Box>
+                <Typography variant="body1">
+                  <strong>위도:</strong> {location.latitude}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>경도:</strong> {location.longitude}
+                </Typography>
+                <Typography variant="body1">
+                  <strong>정확도:</strong> {location.accuracy} 미터
+                </Typography>
+                <Typography variant="body1">
+                  <strong>시간:</strong> {new Date(location.timestamp).toLocaleString()}
+                </Typography>
+                
+                {isTracking && lastUpdate && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    마지막 업데이트: {lastUpdate.toLocaleTimeString()}
+                  </Typography>
+                )}
+              </Box>
+            ) : (
+              <Alert severity="info">
+                위치 정보가 없습니다. '현재 위치 가져오기' 버튼을 클릭하세요.
+              </Alert>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
     </Box>
   );
 };

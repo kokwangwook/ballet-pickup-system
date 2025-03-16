@@ -1,0 +1,28 @@
+{
+  "stations": [
+    {
+      "id": "station1",
+      "name": "1번 정류장",
+      "latitude": 35.0175,
+      "longitude": 126.7873,
+      "radius": 100,
+      "order": 1
+    },
+    {
+      "id": "station2",
+      "name": "2번 정류장",
+      "latitude": 35.0190,
+      "longitude": 126.7890,
+      "radius": 100,
+      "order": 2
+    },
+    {
+      "id": "station3",
+      "name": "3번 정류장",
+      "latitude": 35.0160,
+      "longitude": 126.7850,
+      "radius": 100,
+      "order": 3
+    }
+  ]
+} 

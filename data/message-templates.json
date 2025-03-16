@@ -1,0 +1,16 @@
+{
+  "templates": [
+    {
+      "id": "arrival",
+      "name": "정류장 도착 알림",
+      "template": "[발레픽업] {stationName}에 차량이 도착했습니다.\n학생: {studentName}\n정류장: {stationName}\n예상 대기 시간: {waitTime}분",
+      "variables": ["stationName", "studentName", "waitTime"]
+    },
+    {
+      "id": "departure",
+      "name": "정류장 출발 알림",
+      "template": "[발레픽업] {stationName}에서 차량이 출발했습니다.\n학생: {studentName}\n다음 정류장: {nextStationName}",
+      "variables": ["stationName", "studentName", "nextStationName"]
+    }
+  ]
+} 

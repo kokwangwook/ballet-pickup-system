@@ -1,7 +1,9 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { students as mockStudents, classInfo as mockClassInfo, studentLocations as initialStudentLocations } from '../data/mockData';
 import { format, parse } from 'date-fns';
 import { fetchStudentsFromNotion, updateStudentStatusInNotion, fetchClassInfoFromNotion } from '../api/notionService';
+import { collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, query, orderBy, setDoc } from "firebase/firestore";
+import { db } from '../config/firebase';
 
 // 컨텍스트 생성
 export const PickupContext = createContext();
@@ -9,13 +11,39 @@ export const PickupContext = createContext();
 // 컨텍스트 훅
 export const usePickup = () => useContext(PickupContext);
 
+// location ID를 숫자로 변환하는 유틸리티 함수
+function parseLocationId(locationId) {
+  if (locationId === '' || locationId === null || locationId === undefined) {
+    return null;
+  }
+  
+  // 위치 ID를 항상 문자열로 처리 (숫자로 변환하지 않음)
+  return String(locationId).trim();
+}
+
 // 컨텍스트 제공자 컴포넌트
 export const PickupProvider = ({ children }) => {
+  // 요일 매핑 변수를 상단에 정의
+  const dayMap = {
+    0: '일',
+    1: '월',
+    2: '화', 
+    3: '수',
+    4: '목',
+    5: '금',
+    6: '토'
+  };
+  
   // 선택된 날짜 상태
   const [selectedDate, setSelectedDate] = useState(new Date());
   
-  // 선택된 요일 상태 (0: 일요일, 1: 월요일, ..., 6: 토요일)
-  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(new Date().getDay());
+  // 선택된 요일 상태 (1: 월요일, 2: 화요일, ..., 5: 금요일)
+  const [selectedDayOfWeek, setSelectedDayOfWeek] = useState(() => {
+    const today = new Date();
+    const jsDay = today.getDay(); // 0(일) - 6(토)
+    // 평일(1-5)인 경우 해당 값 반환, 주말인 경우 월요일(1) 반환
+    return jsDay >= 1 && jsDay <= 5 ? jsDay : 1;
+  });
   
   // 선택된 수업 시간 (기본값은 모든 시간)
   const [selectedClassTime, setSelectedClassTime] = useState('all');
@@ -66,20 +94,25 @@ export const PickupProvider = ({ children }) => {
         2: "공원 입구",
         3: "중앙역"
       }
-    },
-    "19:30": {
-      startTime: "19:30",
-      endTime: "20:30",
-      locations: {
-        1: "학원 앞",
-        2: "공원 입구",
-        3: "중앙역"
-      }
     }
   });
   
   // 학생 위치 상태
-  const [studentLocations, setStudentLocations] = useState({});
+  const [studentLocations, setStudentLocations] = useState({
+    arrival: {},
+    departure: {}
+  });
+  
+  // 요일별 학생 위치 상태 추가
+  const [dailyStudentLocations, setDailyStudentLocations] = useState({
+    '일': { arrival: {}, departure: {} },
+    '월': { arrival: {}, departure: {} },
+    '화': { arrival: {}, departure: {} },
+    '수': { arrival: {}, departure: {} },
+    '목': { arrival: {}, departure: {} },
+    '금': { arrival: {}, departure: {} },
+    '토': { arrival: {}, departure: {} }
+  });
   
   // 등하원 상태
   const [arrivalStatus, setArrivalStatus] = useState({});
@@ -91,6 +124,10 @@ export const PickupProvider = ({ children }) => {
   
   // 노션 사용 여부 (노션 API가 실패하면 모의 데이터로 폴백)
   const [useNotion, setUseNotion] = useState(true);
+  const [stations, setStations] = useState([]); // 정류장 정보 상태 추가
+
+  // 처리 중인 학생 ID를 추적하는 ref 추가
+  const processingStatus = useRef([]);
 
   // 날짜 포맷 변환 함수
   const formatDate = (date) => format(date, 'yyyy.MM.dd');
@@ -98,27 +135,47 @@ export const PickupProvider = ({ children }) => {
   // 요일 이름 가져오기
   const getDayName = (dayIndex) => {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
+    // 범위 체크
+    if (dayIndex < 0 || dayIndex > 6) {
+      return '유효하지 않은 요일';
+    }
     return days[dayIndex];
   };
   
   // 날짜 변경 시 요일도 함께 업데이트
   const handleDateChange = (date) => {
     setSelectedDate(date);
-    setSelectedDayOfWeek(date.getDay());
-    filterStudentsByDay(date.getDay(), allStudents);
+    // JavaScript의 getDay()는 0(일요일)부터 시작하므로 월요일은 1
+    const jsDay = date.getDay();
+    // 1(월요일)부터 5(금요일)까지만 유효하게 처리
+    const workday = jsDay >= 1 && jsDay <= 5 ? jsDay : 1;
+    setSelectedDayOfWeek(workday);
+    filterStudentsByDay(workday, allStudents);
   };
   
   // 요일에 따라 학생 필터링
   const filterStudentsByDay = (dayIndex, studentList) => {
     console.log(`요일별 필터링: ${getDayName(dayIndex)}요일, 전체 학생 수: ${studentList.length}`);
     
+    // 활성 상태인 학생만 필터링 - isActive가 명시적으로 false인 학생 제외
+    const activeStudents = studentList.filter(student => {
+      // 퇴원 처리된 학생(isActive가 false)은 제외
+      if (student.isActive === false) {
+        console.log(`퇴원 처리된 학생 제외 (filterStudentsByDay): ${student.name}`);
+        return false;
+      }
+      return true;
+    });
+    
+    console.log(`활성 상태인 학생 수: ${activeStudents.length}명`);
+    
     // 모든 요일에 동일한 수업 시간이 적용되므로 모든 학생을 표시
     // 단, UI에는 현재 선택된 요일을 표시함
-    setStudents(studentList);
+    setStudents(activeStudents);
     
     // 로그로 수업 시간 확인
     const allClassTimes = new Set();
-    studentList.forEach(student => {
+    activeStudents.forEach(student => {
       if (student.classes) {
         student.classes.forEach(classTime => {
           allClassTimes.add(classTime);
@@ -127,7 +184,7 @@ export const PickupProvider = ({ children }) => {
     });
     
     console.log('모든 수업 시간 목록:', Array.from(allClassTimes));
-    console.log(`${getDayName(dayIndex)}요일 수업 진행 중: 총 ${studentList.length}명의 학생`);
+    console.log(`${getDayName(dayIndex)}요일 수업 진행 중: 총 ${activeStudents.length}명의 학생`);
   };
   
   // 요일 및 수업 시간에 따라 학생 필터링
@@ -141,19 +198,20 @@ export const PickupProvider = ({ children }) => {
       return;
     }
     
-    // 요일 매핑
-    const dayMap = {
-      0: '일',
-      1: '월',
-      2: '화', 
-      3: '수',
-      4: '목',
-      5: '금',
-      6: '토'
-    };
+    // 활성 상태인 학생만 필터링 - isActive가 명시적으로 false인 학생 제외
+    let filteredStudents = allStudents.filter(student => {
+      // 퇴원 처리된 학생(isActive가 false)은 제외
+      if (student.isActive === false) {
+        console.log(`퇴원 처리된 학생 제외 (filterStudents): ${student.name}`);
+        return false;
+      }
+      return true;
+    });
+    
+    console.log(`활성 상태인 학생 수: ${filteredStudents.length}명`);
     
     // 현재 요일에 맞는 학생 필터링
-    let filteredStudents = allStudents.filter(student => {
+    filteredStudents = filteredStudents.filter(student => {
       // classDays 속성이 없거나 비어있는 경우에는 모든 요일에 표시
       if (!student.classDays || student.classDays.length === 0) return true;
       
@@ -199,12 +257,18 @@ export const PickupProvider = ({ children }) => {
   
   // 요일 변경 처리
   const handleDayChange = (dayIndex) => {
+    // 0-6 범위의 dayIndex만 허용
+    if (dayIndex < 0 || dayIndex > 6) {
+      console.warn(`유효하지 않은 요일 인덱스: ${dayIndex}`);
+      return;
+    }
+    
     console.log(`요일 변경: ${getDayName(dayIndex)}요일`);
     
     // 오늘 날짜 기준으로 해당 요일의 날짜 계산
     const today = new Date();
-    const currentDayOfWeek = today.getDay();
-    const dayDiff = dayIndex - currentDayOfWeek;
+    const currentJsDay = today.getDay(); // 0(일) - 6(토)
+    const dayDiff = dayIndex - currentJsDay;
     const newDate = new Date(today);
     newDate.setDate(today.getDate() + dayDiff);
     
@@ -215,19 +279,20 @@ export const PickupProvider = ({ children }) => {
     setTimeout(() => {
       console.log(`변경된 요일로 필터링 실행: ${getDayName(dayIndex)}요일`);
       
-      // 요일 매핑
-      const dayMap = {
-        0: '일',
-        1: '월',
-        2: '화', 
-        3: '수',
-        4: '목',
-        5: '금',
-        6: '토'
-      };
+      // 활성 상태인 학생만 필터링 - isActive가 명시적으로 false인 학생 제외
+      let activeStudents = allStudents.filter(student => {
+        // 퇴원 처리된 학생(isActive가 false)은 제외
+        if (student.isActive === false) {
+          console.log(`퇴원 처리된 학생 제외 (handleDayChange): ${student.name}`);
+          return false;
+        }
+        return true;
+      });
+      
+      console.log(`활성 상태인 학생 수: ${activeStudents.length}명`);
       
       // 현재 요일에 맞는 학생만 필터링
-      let filteredByDay = allStudents.filter(student => {
+      let filteredByDay = activeStudents.filter(student => {
         if (!student.classDays || student.classDays.length === 0) return true;
         return student.classDays.includes(dayMap[dayIndex]);
       });
@@ -261,19 +326,20 @@ export const PickupProvider = ({ children }) => {
     setTimeout(() => {
       console.log(`변경된 수업 시간으로 필터링 실행: ${classTime}`);
       
-      // 요일 매핑
-      const dayMap = {
-        0: '일',
-        1: '월',
-        2: '화', 
-        3: '수',
-        4: '목',
-        5: '금',
-        6: '토'
-      };
+      // 활성 상태인 학생만 필터링
+      let activeStudents = allStudents.filter(student => {
+        // 퇴원 처리된 학생(isActive가 false)은 제외
+        if (student.isActive === false) {
+          console.log(`퇴원 처리된 학생 제외 (handleClassTimeChange): ${student.name}`);
+          return false;
+        }
+        return true;
+      });
+      
+      console.log(`활성 상태인 학생 수: ${activeStudents.length}명`);
       
       // 현재 요일에 맞는 학생만 필터링
-      let dayFilteredStudents = allStudents.filter(student => {
+      let dayFilteredStudents = activeStudents.filter(student => {
         if (!student.classDays || student.classDays.length === 0) return true;
         return student.classDays.includes(dayMap[selectedDayOfWeek]);
       });
@@ -342,61 +408,297 @@ export const PickupProvider = ({ children }) => {
   
   // 등원 상태 변경 함수
   const toggleArrivalStatus = async (studentId) => {
+    console.log(`등원 상태 변경 시도 - 학생 ID: ${studentId}`);
+    
+    // 이미 처리 중인지 확인하는 플래그 추가
+    if (processingStatus.current.includes(studentId)) {
+      console.log(`이미 처리 중인 학생입니다: ${studentId}`);
+      return;
+    }
+    
+    // 처리 중인 학생 ID 추가
+    processingStatus.current.push(studentId);
+    
     try {
+      // 변경 전 상태 확인
+      console.log(`현재 등원 상태: ${arrivalStatus[studentId] ? '완료' : '대기중'}`);
+      
+      const student = allStudents.find(s => s.id === studentId);
+      if (!student) {
+        console.error(`학생 ID ${studentId}에 해당하는 학생을 찾을 수 없습니다.`);
+        // 처리 완료 후 플래그 제거
+        processingStatus.current = processingStatus.current.filter(id => id !== studentId);
+        return;
+      }
+
+      console.log(`학생 찾음: ${student.name} (ID: ${studentId})`);
       const newStatus = !arrivalStatus[studentId];
+      console.log(`새 등원 상태: ${newStatus ? '완료' : '대기중'}`);
       
       // 노션 API 사용 시
       if (useNotion) {
-        const student = students.find(s => s.id === studentId);
-        if (student) {
+        try {
           await updateStudentStatusInNotion(student.id, '등원 상태', newStatus);
+          console.log('Notion API 업데이트 성공');
+        } catch (notionError) {
+          console.error('Notion API 업데이트 오류:', notionError);
         }
       }
       
+      // Firebase에 학생 상태 업데이트
+      try {
+        const studentRef = doc(db, "students", studentId);
+        await updateDoc(studentRef, { arrivalStatus: newStatus });
+        console.log(`Firebase 업데이트 성공: 학생 ${student.name}(${studentId})의 등원 상태가 ${newStatus ? '완료' : '대기중'}으로 변경되었습니다.`);
+      } catch (firestoreError) {
+        console.error('Firebase 업데이트 오류:', firestoreError);
+        // Firebase 업데이트 실패 시에도 UI는 업데이트
+      }
+      
       // 상태 업데이트
-      setArrivalStatus(prev => ({
-        ...prev,
-        [studentId]: newStatus
-      }));
+      console.log('React 상태 업데이트 시작: arrivalStatus');
+      setArrivalStatus(prev => {
+        const newState = {
+          ...prev,
+          [studentId]: newStatus
+        };
+        console.log('새 arrivalStatus 상태:', newState);
+        return newState;
+      });
+      
+      // 학생 데이터 업데이트
+      console.log('React 상태 업데이트 시작: allStudents');
+      setAllStudents(prev => {
+        const newAllStudents = prev.map(s => 
+          s.id === studentId ? { ...s, arrivalStatus: newStatus } : s
+        );
+        return newAllStudents;
+      });
+      
+      // 현재 화면에 표시된 students 상태도 업데이트
+      console.log('React 상태 업데이트 시작: students');
+      setStudents(prev => {
+        const newStudents = prev.map(s =>
+          s.id === studentId ? { ...s, arrivalStatus: newStatus } : s
+        );
+        return newStudents;
+      });
+      
+      console.log('등원 상태 변경 완료');
+      return newStatus;
     } catch (error) {
       console.error('등원 상태 변경 중 오류가 발생했습니다:', error);
       setError('등원 상태 변경 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      return null;
+    } finally {
+      // 처리 완료 후 플래그 제거
+      processingStatus.current = processingStatus.current.filter(id => id !== studentId);
     }
   };
   
   // 하원 상태 변경 함수
   const toggleDepartureStatus = async (studentId) => {
+    console.log(`하차 상태 변경 시도 - 학생 ID: ${studentId}`);
+    
+    // 이미 처리 중인지 확인하는 플래그 추가
+    if (processingStatus.current.includes(studentId)) {
+      console.log(`이미 처리 중인 학생입니다: ${studentId}`);
+      return;
+    }
+    
+    // 처리 중인 학생 ID 추가
+    processingStatus.current.push(studentId);
+    
     try {
+      // 변경 전 상태 확인
+      console.log(`현재 하차 상태: ${departureStatus[studentId] ? '완료' : '대기중'}`);
+      
+      const student = allStudents.find(s => s.id === studentId);
+      if (!student) {
+        console.error(`학생 ID ${studentId}에 해당하는 학생을 찾을 수 없습니다.`);
+        // 처리 완료 후 플래그 제거
+        processingStatus.current = processingStatus.current.filter(id => id !== studentId);
+        return;
+      }
+
+      console.log(`학생 찾음: ${student.name} (ID: ${studentId})`);
       const newStatus = !departureStatus[studentId];
+      console.log(`새 하차 상태: ${newStatus ? '완료' : '대기중'}`);
       
       // 노션 API 사용 시
       if (useNotion) {
-        const student = students.find(s => s.id === studentId);
-        if (student) {
-          await updateStudentStatusInNotion(student.id, '하원 상태', newStatus);
+        try {
+          await updateStudentStatusInNotion(student.id, '하차 상태', newStatus);
+          console.log('Notion API 업데이트 성공');
+        } catch (notionError) {
+          console.error('Notion API 업데이트 오류:', notionError);
         }
       }
       
+      // Firebase에 학생 상태 업데이트
+      try {
+        const studentRef = doc(db, "students", studentId);
+        await updateDoc(studentRef, { departureStatus: newStatus });
+        console.log(`Firebase 업데이트 성공: 학생 ${student.name}(${studentId})의 하차 상태가 ${newStatus ? '완료' : '대기중'}으로 변경되었습니다.`);
+      } catch (firestoreError) {
+        console.error('Firebase 업데이트 오류:', firestoreError);
+        // Firebase 업데이트 실패 시에도 UI는 업데이트
+      }
+      
       // 상태 업데이트
-      setDepartureStatus(prev => ({
-        ...prev,
-        [studentId]: newStatus
-      }));
+      console.log('React 상태 업데이트 시작: departureStatus');
+      setDepartureStatus(prev => {
+        const newState = {
+          ...prev,
+          [studentId]: newStatus
+        };
+        console.log('새 departureStatus 상태:', newState);
+        return newState;
+      });
+      
+      // 학생 데이터 업데이트
+      console.log('React 상태 업데이트 시작: allStudents');
+      setAllStudents(prev => {
+        const newAllStudents = prev.map(s => 
+          s.id === studentId ? { ...s, departureStatus: newStatus } : s
+        );
+        return newAllStudents;
+      });
+      
+      // 현재 화면에 표시된 students 상태도 업데이트
+      console.log('React 상태 업데이트 시작: students');
+      setStudents(prev => {
+        const newStudents = prev.map(s =>
+          s.id === studentId ? { ...s, departureStatus: newStatus } : s
+        );
+        return newStudents;
+      });
+      
+      console.log('하차 상태 변경 완료');
+      return newStatus;
     } catch (error) {
-      console.error('하원 상태 변경 중 오류가 발생했습니다:', error);
-      setError('하원 상태 변경 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('하차 상태 변경 중 오류가 발생했습니다:', error);
+      setError('하차 상태 변경 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      return null;
+    } finally {
+      // 처리 완료 후 플래그 제거
+      processingStatus.current = processingStatus.current.filter(id => id !== studentId);
     }
   };
   
-  // 학생별 위치 정보 변경 함수
+  // 학생별 위치 정보 변경 함수 개선
   const updateStudentLocation = (studentId, locationType, locationId) => {
-    setStudentLocations(prev => ({
-      ...prev,
-      [studentId]: {
-        ...prev[studentId],
-        [locationType]: locationId
+    const student = allStudents.find(s => s.id === studentId);
+    if (!student) {
+      console.error(`학생 ID ${studentId}에 해당하는 학생을 찾을 수 없습니다.`);
+      return;
+    }
+    
+    // 위치 ID를 문자열로 표준화
+    const locationIdStr = locationId ? String(locationId).trim() : null;
+    
+    setStudentLocations(prev => {
+      const newLocations = { ...prev };
+      
+      // 해당 위치 타입 객체가 없으면 초기화
+      if (!newLocations[locationType]) {
+        newLocations[locationType] = {};
       }
-    }));
+      
+      // 모든 위치에서 해당 학생 제거
+      Object.keys(newLocations[locationType]).forEach(locId => {
+        if (newLocations[locationType][locId]) {
+          newLocations[locationType][locId] = newLocations[locationType][locId].filter(
+            s => s.id !== studentId
+          );
+        }
+      });
+      
+      // 새 위치가 유효하면 해당 위치에 학생 추가
+      if (locationIdStr) {
+        if (!newLocations[locationType][locationIdStr]) {
+          newLocations[locationType][locationIdStr] = [];
+        }
+        newLocations[locationType][locationIdStr].push(student);
+      }
+      
+      return newLocations;
+    });
+    
+    // 학생 객체 업데이트 (Firebase와 동기화를 위해)
+    if (locationType === 'arrival') {
+      updateStudent(studentId, { arrivalLocation: locationIdStr });
+    } else if (locationType === 'departure') {
+      updateStudent(studentId, { departureLocation: locationIdStr });
+    }
+  };
+  
+  // 필드명 변환 함수 (스네이크 케이스 -> 카멜 케이스)
+  const transformStudentData = (student) => {
+    // Supabase 응답이 스네이크 케이스인 경우 카멜 케이스로 변환
+    if (student.short_id !== undefined) {
+      return {
+        id: student.id,
+        name: student.name,
+        shortId: student.short_id,
+        classTime: student.class_time,
+        classes: [student.class_time], // classes 배열 생성
+        arrivalLocation: student.arrival_location || '',
+        departureLocation: student.departure_location || '',
+        arrivalStatus: student.arrival_status || false,
+        departureStatus: student.departure_status || false,
+        isActive: student.is_active !== undefined ? student.is_active : true,
+        motherPhone: student.mother_phone || '',
+        fatherPhone: student.father_phone || '',
+        studentPhone: student.student_phone || '',
+        otherPhone: student.other_phone || '',
+        classDays: student.class_days || [],
+        registrationDate: student.registration_date || null
+      };
+    }
+    
+    // 이미 카멜 케이스인 경우 그대로 반환
+    return student;
+  };
+  
+  // 시간 형식 표준화 함수
+  const normalizeClassTime = (time) => {
+    if (!time) return time;
+    
+    // 시간 형식 표준화
+    if (time === '16:40') return '16:30';
+    if (time === '17:40') return '17:30';
+    if (time === '18:40') return '18:30';
+    
+    return time;
+  };
+  
+  // 학생 데이터의 시간 형식 표준화
+  const normalizeStudentTimes = (student) => {
+    if (!student) return student;
+    
+    const normalizedStudent = { ...student };
+    
+    // classTime 필드 표준화
+    if (normalizedStudent.classTime) {
+      normalizedStudent.classTime = normalizeClassTime(normalizedStudent.classTime);
+    }
+    
+    // classTimes 객체 표준화
+    if (normalizedStudent.classTimes && typeof normalizedStudent.classTimes === 'object') {
+      const normalizedClassTimes = { ...normalizedStudent.classTimes };
+      Object.keys(normalizedClassTimes).forEach(day => {
+        normalizedClassTimes[day] = normalizeClassTime(normalizedClassTimes[day]);
+      });
+      normalizedStudent.classTimes = normalizedClassTimes;
+    }
+    
+    // classes 배열 표준화
+    if (normalizedStudent.classes && Array.isArray(normalizedStudent.classes)) {
+      normalizedStudent.classes = normalizedStudent.classes.map(time => normalizeClassTime(time));
+    }
+    
+    return normalizedStudent;
   };
   
   // Notion API에서 학생 데이터 가져오기
@@ -430,15 +732,15 @@ export const PickupProvider = ({ children }) => {
 
       console.log(`Notion에서 ${data.results.length}명의 학생 데이터를 받았습니다.`);
 
-      // 학생 데이터 정보를 처리하여 필요한 정보만 추출
-      const processedStudents = data.results.map(student => {
+      // 학생 데이터 변환
+      const studentsData = data.results.map(item => {
         // properties 확인
-        if (!student.properties) {
-          console.warn("학생 데이터에 properties가 없습니다:", student);
+        if (!item.properties) {
+          console.warn("학생 데이터에 properties가 없습니다:", item);
           return null;
         }
         
-        const properties = student.properties;
+        const properties = item.properties;
         
         // 필요한 속성들이 있는지 확인
         const hasName = properties.Name && properties.Name.title && properties.Name.title.length > 0;
@@ -446,7 +748,7 @@ export const PickupProvider = ({ children }) => {
         const shortId = properties.ShortId?.number || Math.floor(Math.random() * 100); // ShortId가 없으면 임의의 번호 생성
         
         if (!hasName) {
-          console.warn("학생 이름이 없습니다:", student);
+          console.warn("학생 이름이 없습니다:", item);
           return null;
         }
         
@@ -479,12 +781,12 @@ export const PickupProvider = ({ children }) => {
         } else {
           console.warn(`학생 ${name}의 수업 시간 정보가 없습니다.`);
           // 임시 조치: 기본 수업 시간 할당
-          classTimes = ["10:00", "14:00", "16:00", "18:00"];
+          classTimes = ["15:30", "16:30", "17:30", "18:30", "19:30"];
         }
         
         // 처리된 학생 데이터 객체 생성
         return {
-          id: student.id,
+          id: item.id,
           name: name,
           shortId: shortId,
           classes: classTimes,
@@ -492,31 +794,62 @@ export const PickupProvider = ({ children }) => {
         };
       }).filter(student => student !== null); // null 값 제거
       
-      console.log("처리된 학생 데이터:", processedStudents);
+      console.log("변환된 학생 데이터:", studentsData);
       
-      // 학생 위치 초기화
-      const initialLocations = {};
-      processedStudents.forEach(student => {
-        initialLocations[student.id] = {
-          arrival: 1,  // 기본값: 위치 1
-          departure: 1 // 기본값: 위치 1
-        };
+      // 모든 학생 데이터 저장
+      setAllStudents(studentsData);
+      
+      // 활성 상태인 학생만 필터링하여 저장
+      const activeStudents = studentsData.filter(student => student.isActive !== false);
+      setStudents(activeStudents);
+      
+      console.log(`${activeStudents.length}명의 활성 학생 데이터가 로드되었습니다.`);
+      
+      // 위치 정보 초기화
+      const initialLocations = {
+        arrival: {},
+        departure: {}
+      };
+      
+      studentsData.forEach(student => {
+        // 기존에 있던 위치 정보 활용
+        const arrivalLocation = student.arrivalLocation ? parseLocationId(student.arrivalLocation) : null;
+        const departureLocation = student.departureLocation ? parseLocationId(student.departureLocation) : null;
+        
+        // 등원 위치가 있으면 해당 위치에 학생 추가
+        if (arrivalLocation !== null) {
+          if (!initialLocations.arrival[arrivalLocation]) {
+            initialLocations.arrival[arrivalLocation] = [];
+          }
+          initialLocations.arrival[arrivalLocation].push(student);
+        }
+        
+        // 하원 위치가 있으면 해당 위치에 학생 추가
+        if (departureLocation !== null) {
+          if (!initialLocations.departure[departureLocation]) {
+            initialLocations.departure[departureLocation] = [];
+          }
+          initialLocations.departure[departureLocation].push(student);
+        }
+        
+        console.log(`학생 ${student.name}의 위치 정보 초기화: 등원(${arrivalLocation}), 하원(${departureLocation})`);
       });
+      
       setStudentLocations(initialLocations);
       
       // 도착/출발 상태 초기화
       const initialArrival = {};
       const initialDeparture = {};
-      processedStudents.forEach(student => {
-        initialArrival[student.id] = false;
-        initialDeparture[student.id] = false;
+      studentsData.forEach(student => {
+        initialArrival[student.id] = student.arrivalStatus || false;
+        initialDeparture[student.id] = student.departureStatus || false;
       });
       setArrivalStatus(initialArrival);
       setDepartureStatus(initialDeparture);
       
       // 상태 업데이트
-      setAllStudents(processedStudents);
-      setStudents(processedStudents);
+      setAllStudents(studentsData);
+      setStudents(studentsData);
       
       setUseNotion(true);
       setLoading(false);
@@ -527,7 +860,7 @@ export const PickupProvider = ({ children }) => {
       // 오류 발생 시 테스트 데이터로 대체
       console.log("오류로 인해 테스트 데이터를 사용합니다.");
       const testStudents = [];
-      const classTimeOptions = ["10:00", "14:00", "16:00", "18:00"];
+      const classTimeOptions = ["15:30", "16:30", "17:30", "18:30", "19:30"];
       
       for (let i = 1; i <= 15; i++) {
         testStudents.push({
@@ -543,14 +876,7 @@ export const PickupProvider = ({ children }) => {
       setStudents(testStudents);
       
       // 학생 위치 초기화
-      const initialLocations = {};
-      testStudents.forEach(student => {
-        initialLocations[student.id] = {
-          arrival: 1,
-          departure: 1
-        };
-      });
-      setStudentLocations(initialLocations);
+      setStudentLocations(initialStudentLocations);
       
       // 도착/출발 상태 초기화
       const initialArrival = {};
@@ -568,7 +894,7 @@ export const PickupProvider = ({ children }) => {
   };
   
   // Notion에서 수업 정보 가져오기
-  const fetchClassData = async () => {
+  const fetchClassInfo = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -607,209 +933,274 @@ export const PickupProvider = ({ children }) => {
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      // 서버 API 호출
-      console.log('서버에서 학생 데이터를 불러오는 중...');
+      // 서버 API를 통해 학생 데이터 가져오기
       const response = await fetch('/api/students');
       
       if (!response.ok) {
-        throw new Error(`서버 응답 오류: ${response.status}`);
+        throw new Error(`학생 데이터 가져오기 실패: ${response.status}`);
       }
       
-      const data = await response.json();
-      console.log('학생 데이터 응답 받음:', data);
+      const studentsData = await response.json();
+      console.log(`서버에서 ${studentsData.length}명의 학생 데이터를 가져왔습니다.`);
       
-      // 데이터 검증
-      if (!Array.isArray(data)) {
-        console.error('서버에서 받은 학생 데이터가 배열 형식이 아닙니다:', data);
-        setError('서버에서 받은 학생 데이터 형식이 올바르지 않습니다.');
-        setLoading(false);
-        return;
+      // 시간 형식 표준화 적용
+      const normalizedStudentsData = studentsData.map(student => normalizeStudentTimes(student));
+      
+      // 모든 학생 데이터 저장
+      setAllStudents(normalizedStudentsData);
+      
+      // 퇴원 처리된 학생 목록 확인 (디버깅용)
+      const inactiveStudents = normalizedStudentsData.filter(student => student.isActive === false);
+      console.log(`퇴원 처리된 학생 수: ${inactiveStudents.length}명`);
+      if (inactiveStudents.length > 0) {
+        console.log('퇴원 처리된 학생 목록:');
+        inactiveStudents.forEach(student => {
+          console.log(`- ${student.name} (ID: ${student.id}, isActive: ${student.isActive})`);
+        });
       }
       
-      if (data.length === 0) {
-        console.warn('서버에서 받은 학생 데이터가 없습니다.');
-      }
-      
-      setAllStudents(data);
-      setStudents(data);
-      
-      // 초기 학생 등하원 상태 설정
-      const initialArrivalStatus = {};
-      const initialDepartureStatus = {};
-      
-      data.forEach(student => {
-        initialArrivalStatus[student.id] = student.arrivalStatus || false;
-        initialDepartureStatus[student.id] = student.departureStatus || false;
+      // 활성 상태인 학생만 필터링하여 저장 - isActive가 명시적으로 false인 학생 제외
+      const activeStudents = normalizedStudentsData.filter(student => {
+        if (student.isActive === false) {
+          console.log(`퇴원 처리된 학생 제외 (fetchStudents): ${student.name}`);
+          return false;
+        }
+        return true;
       });
       
-      setArrivalStatus(initialArrivalStatus);
-      setDepartureStatus(initialDepartureStatus);
+      setStudents(activeStudents);
       
+      console.log(`${activeStudents.length}명의 활성 학생 데이터가 로드되었습니다.`);
+      
+      // 현재 선택된 요일과 수업 시간에 맞게 필터링 적용
+      setTimeout(() => {
+        filterStudents();
+      }, 0);
+      
+      setError(null);
     } catch (error) {
-      console.error('학생 데이터 가져오기 오류:', error);
-      setError(`학생 데이터를 가져오는 중 오류가 발생했습니다: ${error.message}`);
-      
-      // 오류 발생 시 빈 배열 설정 (초기 상태 유지)
-      setAllStudents([]);
-      setStudents([]);
-      setArrivalStatus({});
-      setDepartureStatus({});
+      console.error('학생 데이터 로딩 오류:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // 학생 추가 함수
+  // 학생 추가
   const addStudent = async (studentData) => {
-    setLoading(true);
+    console.log('학생 추가 시작');
+    console.log('학생 데이터:', studentData);
+    
     try {
-      const response = await fetch('/api/students', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(studentData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '학생 등록에 실패했습니다.');
-      }
-
-      const newStudent = await response.json();
+      // 기본 필드 확인 및 초기화
+      const newStudent = {
+        name: studentData.name,
+        shortId: studentData.shortId,
+        classDays: studentData.classDays || [],
+        classTimes: studentData.classTimes || {},
+        arrivalLocations: studentData.arrivalLocations || {},
+        departureLocations: studentData.departureLocations || {},
+        motherPhone: studentData.motherPhone || '',
+        fatherPhone: studentData.fatherPhone || '',
+        studentPhone: studentData.studentPhone || '',
+        otherPhone: studentData.otherPhone || '',
+        registrationDate: studentData.registrationDate || new Date().toISOString(),
+        isActive: studentData.isActive === undefined ? true : studentData.isActive,
+        school: studentData.school || '',
+        birthDate: studentData.birthDate || null,
+        grade: studentData.grade || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Firestore에 추가
+      const docRef = await addDoc(collection(db, 'students'), newStudent);
+      const newStudentWithId = { ...newStudent, id: docRef.id };
       
       // 상태 업데이트
-      setAllStudents(prev => [...prev, newStudent]);
-      setStudents(prev => [...prev, newStudent]);
+      setAllStudents(prev => [...prev, newStudentWithId]);
       
-      // 등하원 상태 업데이트
-      setArrivalStatus(prev => ({
-        ...prev,
-        [newStudent.id]: false
-      }));
+      // 필터링된 상태에도 추가 (모든 새 학생은 일단 표시)
+      setStudents(prev => [...prev, newStudentWithId]);
       
-      setDepartureStatus(prev => ({
-        ...prev,
-        [newStudent.id]: false
-      }));
-      
-      // studentLocations 업데이트
-      if (studentData.arrivalLocation || studentData.departureLocation) {
-        // 문자열 위치 정보를 숫자로 변환
-        const parseLocationId = (location) => {
-          if (!location) return null;
-          const numericLocation = parseInt(location);
-          if (!isNaN(numericLocation)) {
-            return numericLocation;
-          }
-          return location; // 숫자로 변환할 수 없는 경우 원래 값 사용
-        };
-        
-        // 위치 정보 업데이트
-        setStudentLocations(prev => ({
-          ...prev,
-          [newStudent.id]: {
-            arrival: studentData.arrivalLocation ? parseLocationId(studentData.arrivalLocation) : null,
-            departure: studentData.departureLocation ? parseLocationId(studentData.departureLocation) : null
-          }
-        }));
-        
-        console.log(`새 학생 ${newStudent.name}의 위치 정보가 설정되었습니다.`);
-        console.log(`등원 위치: ${studentData.arrivalLocation}, 하원 위치: ${studentData.departureLocation}`);
-      }
-      
-      return newStudent;
+      console.log('학생 추가 성공:', docRef.id);
+      return docRef.id;
     } catch (error) {
-      console.error('학생 등록 오류:', error);
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('학생 추가 실패:', error);
+      throw new Error('학생 추가에 실패했습니다.');
     }
   };
 
-  // 학생 정보 수정 함수
-  const updateStudent = async (studentId, studentData) => {
-    setLoading(true);
+  // 학생 정보 업데이트
+  const updateStudent = async (studentId, updatedData) => {
+    console.log(`학생 정보 업데이트 시작: ${studentId}`);
+    console.log('업데이트 데이터:', updatedData);
+    
     try {
-      const response = await fetch(`/api/students/${studentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(studentData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '학생 정보 수정에 실패했습니다.');
+      // 학생 ID 처리 - 다양한 ID 형식 처리
+      let actualStudentId = studentId;
+      
+      // 1. 이미 'student-'로 시작하는 경우 그대로 사용
+      if (studentId.startsWith('student-')) {
+        actualStudentId = studentId;
+      } 
+      // 2. docId 필드가 있는 경우 해당 값 사용
+      else if (studentId.docId) {
+        actualStudentId = studentId.docId;
       }
-
-      const updatedStudent = await response.json();
-      
-      // 상태 업데이트
-      setAllStudents(prev => 
-        prev.map(student => student.id === studentId ? updatedStudent : student)
-      );
-      
-      setStudents(prev => 
-        prev.map(student => student.id === studentId ? updatedStudent : student)
-      );
-      
-      // studentLocations 업데이트
-      if (studentData.arrivalLocation || studentData.departureLocation) {
-        // 문자열 위치 정보를 숫자로 변환
-        const parseLocationId = (location) => {
-          if (!location) return null;
-          const numericLocation = parseInt(location);
-          if (!isNaN(numericLocation)) {
-            return numericLocation;
-          }
-          return location; // 숫자로 변환할 수 없는 경우 원래 값 사용
-        };
-        
-        // 위치 정보 업데이트
-        setStudentLocations(prev => ({
-          ...prev,
-          [studentId]: {
-            ...prev[studentId],
-            arrival: studentData.arrivalLocation ? parseLocationId(studentData.arrivalLocation) : prev[studentId]?.arrival,
-            departure: studentData.departureLocation ? parseLocationId(studentData.departureLocation) : prev[studentId]?.departure
-          }
-        }));
-        
-        console.log(`학생 ${updatedStudent.name}의 위치 정보가 업데이트되었습니다.`);
-        console.log(`등원 위치: ${studentData.arrivalLocation}, 하원 위치: ${studentData.departureLocation}`);
+      // 3. 그 외의 경우 'student-' 접두사 추가
+      else {
+        // 먼저 allStudents에서 해당 ID를 가진 학생을 찾아봄
+        const foundStudent = allStudents.find(s => s.id === studentId);
+        if (foundStudent && foundStudent.docId) {
+          actualStudentId = foundStudent.docId;
+        } else {
+          actualStudentId = `student-${studentId}`;
+        }
       }
       
-      return updatedStudent;
+      console.log(`실제 사용할 문서 ID: ${actualStudentId}`);
+      
+      // 학생 참조 가져오기
+      const studentRef = doc(db, 'students', actualStudentId);
+      
+      // 현재 학생 데이터 가져오기
+      const studentDoc = await getDoc(studentRef);
+      if (!studentDoc.exists()) {
+        console.error(`학생 정보를 찾을 수 없습니다. ID: ${actualStudentId}`);
+        
+        // 다른 방식으로 ID 시도 (접두사 없이)
+        if (actualStudentId.startsWith('student-')) {
+          const alternativeId = actualStudentId.replace('student-', '');
+          const alternativeRef = doc(db, 'students', alternativeId);
+          const alternativeDoc = await getDoc(alternativeRef);
+          
+          if (alternativeDoc.exists()) {
+            console.log(`대체 ID로 학생 정보를 찾았습니다: ${alternativeId}`);
+            const currentData = alternativeDoc.data();
+            
+            // 업데이트할 데이터 준비
+            const dataToUpdate = {
+              ...updatedData,
+              updatedAt: updatedData.updatedAt || new Date().toISOString()
+            };
+      
+      // Firestore에 업데이트
+            await updateDoc(alternativeRef, dataToUpdate);
+      
+      // 학생 목록 갱신
+            console.log(`학생 정보 업데이트 성공: ${alternativeId}`);
+            const updatedAllStudents = allStudents.map(student => 
+              student.id === studentId ? { ...student, ...updatedData, id: studentId } : student
+            );
+            setAllStudents(updatedAllStudents);
+            
+            const updatedFilteredStudents = students.map(student => 
+              student.id === studentId ? { ...student, ...updatedData, id: studentId } : student
+            );
+            setStudents(updatedFilteredStudents);
+            
+            return true;
+          }
+        }
+        
+        throw new Error(`학생 정보를 찾을 수 없습니다. ID: ${actualStudentId}`);
+      }
+      
+      const currentData = studentDoc.data();
+      console.log('현재 학생 데이터:', currentData);
+      
+      // 업데이트할 데이터 준비 (기존 데이터와 새 데이터 병합)
+      const dataToUpdate = {
+        ...updatedData,
+        updatedAt: updatedData.updatedAt || new Date().toISOString()
+      };
+      
+      console.log('업데이트할 데이터:', dataToUpdate);
+      
+      // Firestore에 업데이트
+      await updateDoc(studentRef, dataToUpdate);
+      
+      // 학생 목록 갱신
+      console.log(`학생 정보 업데이트 성공: ${actualStudentId}`);
+      const updatedAllStudents = allStudents.map(student => 
+        student.id === studentId ? { ...student, ...updatedData, id: studentId } : student
+      );
+      setAllStudents(updatedAllStudents);
+      
+      const updatedFilteredStudents = students.map(student => 
+        student.id === studentId ? { ...student, ...updatedData, id: studentId } : student
+      );
+      setStudents(updatedFilteredStudents);
+      
+      return true;
     } catch (error) {
-      console.error('학생 정보 수정 오류:', error);
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('학생 정보 업데이트 실패:', error);
+      console.error('오류 메시지:', error.message);
+      console.error('오류 코드:', error.code);
+      console.error('오류 스택:', error.stack);
+      throw error; // 원래 오류를 그대로 전달하여 더 자세한 오류 정보를 제공
     }
   };
   
-  // 학생 삭제 함수
-  const removeStudent = async (studentId) => {
+  // 학생 삭제 함수 개선
+  const deleteStudent = async (studentId) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/students/${studentId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '학생 삭제에 실패했습니다.');
+      // 삭제할 학생 찾기
+      const studentToDelete = allStudents.find(student => student.id === studentId);
+      
+      if (!studentToDelete) {
+        throw new Error('삭제할 학생을 찾을 수 없습니다.');
       }
-
-      // 상태 업데이트
+      
+      // Firebase에서 학생 문서 삭제
+      await deleteDoc(doc(db, "students", studentId));
+      
+      // allStudents 상태 업데이트
       setAllStudents(prev => prev.filter(student => student.id !== studentId));
+      
+      // students 상태도 업데이트
       setStudents(prev => prev.filter(student => student.id !== studentId));
       
-      // 등하원 상태에서 삭제
+      // studentLocations 상태 업데이트
+      setStudentLocations(prev => {
+        const newLocations = { ...prev };
+        
+        // arrival 객체가 없으면 초기화
+        if (!newLocations.arrival) {
+          newLocations.arrival = {};
+        }
+        
+        // departure 객체가 없으면 초기화
+        if (!newLocations.departure) {
+          newLocations.departure = {};
+        }
+        
+        // 도착 위치에서 학생 제거
+        if (studentToDelete.arrivalLocation) {
+          const arrivalLocId = String(studentToDelete.arrivalLocation).trim();
+            
+          if (newLocations.arrival[arrivalLocId]) {
+            newLocations.arrival[arrivalLocId] = newLocations.arrival[arrivalLocId]
+              .filter(student => student.id !== studentId);
+          }
+        }
+        
+        // 출발 위치에서 학생 제거
+        if (studentToDelete.departureLocation) {
+          const departureLocId = String(studentToDelete.departureLocation).trim();
+            
+          if (newLocations.departure[departureLocId]) {
+            newLocations.departure[departureLocId] = newLocations.departure[departureLocId]
+              .filter(student => student.id !== studentId);
+          }
+        }
+        
+        return newLocations;
+      });
+      
+      // 등하원 상태에서도 학생 제거
       setArrivalStatus(prev => {
         const newStatus = { ...prev };
         delete newStatus[studentId];
@@ -822,107 +1213,150 @@ export const PickupProvider = ({ children }) => {
         return newStatus;
       });
       
-      // 학생 위치 정보에서 삭제
-      setStudentLocations(prev => {
-        const newLocations = { ...prev };
-        delete newLocations[studentId];
-        return newLocations;
-      });
-      
-      console.log(`학생 ID:${studentId} 삭제 완료`);
-      return true;
+      setLoading(false);
+      return studentToDelete;
     } catch (error) {
       console.error('학생 삭제 오류:', error);
       setError(error.message);
+      setLoading(false);
       throw error;
+    }
+  };
+  
+  // 수업 정보 업데이트 함수
+  const updateClassInfo = async (newClassInfo) => {
+    setLoading(true);
+    try {
+      // Firestore에 수업 정보 업데이트
+      const classInfoRef = doc(db, "system", "classInfo");
+      await setDoc(classInfoRef, newClassInfo);
+      
+      // 상태 업데이트
+      setClassInfo(newClassInfo);
+      
+      console.log('수업 정보가 성공적으로 업데이트되었습니다:', newClassInfo);
+      return true;
+    } catch (error) {
+      console.error('수업 정보 업데이트 오류:', error);
+      setError(error.message);
+      return false;
     } finally {
       setLoading(false);
     }
   };
   
-  // 날짜가 변경될 때마다 데이터 다시 가져오기
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        
-        // 학생 데이터 가져오기
-        const studentsResponse = await fetch('/api/students');
-        const studentsData = await studentsResponse.json();
-        
-        // 활성화된 학생만 필터링
-        const activeStudents = studentsData.filter(student => student.isActive !== false);
-        
-        // 수업 정보 가져오기
-        const classResponse = await fetch('/api/class-info');
-        const classInfoData = await classResponse.json();
-        
-        // 학생 데이터와 수업 정보 설정
-        setClassInfo(classInfoData);
-        
-        // 전처리된 학생 데이터 생성
-        const processedStudents = activeStudents.map(student => {
-          // classDays 속성이 없으면 배열로 초기화
-          if (!student.classDays) {
-            student.classDays = [];
-          }
-          return student;
-        });
-        
-        // 위치 정보 초기화
-        const initialLocations = {};
-        processedStudents.forEach(student => {
-          // 기존에 있던 위치 정보 활용
-          const arrivalLocation = student.arrivalLocation ? parseInt(student.arrivalLocation) || student.arrivalLocation : null;
-          const departureLocation = student.departureLocation ? parseInt(student.departureLocation) || student.departureLocation : null;
-          
-          initialLocations[student.id] = {
-            arrival: arrivalLocation !== undefined ? arrivalLocation : null,
-            departure: departureLocation !== undefined ? departureLocation : null
-          };
-          
-          console.log(`학생 ${student.name}의 위치 정보 초기화: 등원(${arrivalLocation}), 하원(${departureLocation})`);
-        });
-        setStudentLocations(initialLocations);
-        
-        // 도착/출발 상태 초기화
-        const initialArrival = {};
-        const initialDeparture = {};
-        processedStudents.forEach(student => {
-          initialArrival[student.id] = student.arrivalStatus || false;
-          initialDeparture[student.id] = student.departureStatus || false;
-        });
-        setArrivalStatus(initialArrival);
-        setDepartureStatus(initialDeparture);
-        
-        // 상태 업데이트
-        setAllStudents(processedStudents);
-        setStudents(processedStudents);
-        
-        setLoading(false);
-      } catch (error) {
-        console.error("학생 데이터 가져오기 오류:", error);
-        setError("학생 데이터를 가져오는 중에 오류가 발생했습니다.");
-        setLoading(false);
-        
-        // 테스트 데이터로 대체
-        const mockStudentsData = mockStudents.map(student => ({
-          ...student,
-          arrivalStatus: false,
-          departureStatus: false
-        }));
-        
-        setClassInfo(mockClassInfo);
-        setAllStudents(mockStudentsData);
-        setStudents(mockStudentsData);
-        
-        // 학생 위치 초기화
-        setStudentLocations(initialStudentLocations);
+  // 시스템 설정 저장 함수
+  const updateSystemSettings = async (settings) => {
+    setLoading(true);
+    try {
+      // Firestore에 시스템 설정 저장
+      const settingsRef = doc(db, "system", "settings");
+      await setDoc(settingsRef, settings);
+      
+      // 필요한 상태 업데이트
+      if (settings.timeOptions) {
+        // 시간대 옵션에 맞게 classInfo 업데이트 필요 시 처리
+        console.log('시간대 옵션 업데이트됨:', settings.timeOptions);
       }
-    };
-    
-    loadData();
-  }, [selectedDate]);
+      
+      console.log('시스템 설정이 성공적으로 저장되었습니다:', settings);
+      return true;
+    } catch (error) {
+      console.error('시스템 설정 저장 오류:', error);
+      setError(error.message);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 정류장 정보 가져오기
+  const fetchStations = async () => {
+    try {
+      const response = await fetch('/api/stations');
+      if (!response.ok) throw new Error('정류장 정보를 가져오는데 실패했습니다.');
+      const data = await response.json();
+      setStations(data); // 정류장 정보 상태 업데이트
+    } catch (err) {
+      console.error('정류장 정보 로드 중 오류:', err);
+      setError('정류장 정보를 불러오는데 실패했습니다.');
+    }
+  };
+
+  // 정류장 추가
+  const addStation = async (stationData) => {
+    try {
+      const response = await fetch('/api/stations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(stationData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('정류장 추가에 실패했습니다.');
+      }
+      
+      const newStation = await response.json();
+      setStations(prev => [...prev, newStation]);
+      return newStation;
+    } catch (error) {
+      console.error('정류장 추가 중 오류:', error);
+      throw error;
+    }
+  };
+
+  // 정류장 수정
+  const updateStation = async (stationId, stationData) => {
+    try {
+      const response = await fetch(`/api/stations/${stationId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(stationData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('정류장 수정에 실패했습니다.');
+      }
+      
+      const updatedStation = await response.json();
+      setStations(prev => prev.map(station => 
+        station.id === stationId ? updatedStation : station
+      ));
+      return updatedStation;
+    } catch (error) {
+      console.error('정류장 수정 중 오류:', error);
+      throw error;
+    }
+  };
+
+  // 정류장 삭제
+  const deleteStation = async (stationId) => {
+    try {
+      const response = await fetch(`/api/stations/${stationId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('정류장 삭제에 실패했습니다.');
+      }
+      
+      setStations(prev => prev.filter(station => station.id !== stationId));
+      } catch (error) {
+      console.error('정류장 삭제 중 오류:', error);
+      throw error;
+    }
+  };
+
+  // 컴포넌트 마운트 시 데이터 로드
+  useEffect(() => {
+    fetchStudents();
+    fetchClassInfo();
+    fetchStations(); // 정류장 정보 로드 추가
+  }, []);
   
   // 컨텍스트 값
   const value = {
@@ -944,6 +1378,7 @@ export const PickupProvider = ({ children }) => {
     arrivalStatus,
     departureStatus,
     studentLocations,
+    dailyStudentLocations,  // 요일별 학생 위치 정보 추가
     toggleArrivalStatus,
     toggleDepartureStatus,
     updateStudentLocation,
@@ -951,8 +1386,16 @@ export const PickupProvider = ({ children }) => {
     fetchStudents,
     addStudent,
     updateStudent,
-    removeStudent,
-    locations: classInfo
+    deleteStudent,
+    locations: classInfo,
+    dayMap,  // 요일 매핑 객체 추가
+    updateClassInfo,
+    updateSystemSettings,
+    stations, // 정류장 정보 추가
+    fetchStations,
+    addStation,
+    updateStation,
+    deleteStation,
   };
   
   return (

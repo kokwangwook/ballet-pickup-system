@@ -1,0 +1,32 @@
+{
+  "vehicles": [
+    {
+      "id": "vehicle1",
+      "name": "1호차",
+      "plateNumber": "서울 1234",
+      "driver": "김기사",
+      "capacity": 15,
+      "currentLocation": {
+        "latitude": 37.5665,
+        "longitude": 126.9780,
+        "timestamp": "2023-03-11T12:00:00Z"
+      },
+      "currentStation": "station1",
+      "nextStation": "station2"
+    },
+    {
+      "id": "vehicle2",
+      "name": "2호차",
+      "plateNumber": "서울 5678",
+      "driver": "이기사",
+      "capacity": 15,
+      "currentLocation": {
+        "latitude": 37.5668,
+        "longitude": 126.9786,
+        "timestamp": "2023-03-11T12:00:00Z"
+      },
+      "currentStation": "station2",
+      "nextStation": "station3"
+    }
+  ]
+} 

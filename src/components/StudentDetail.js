@@ -10,7 +10,12 @@ import {
   Stack,
   List,
   ListItem,
-  ListItemText
+  ListItemText,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
@@ -21,8 +26,13 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import NoteIcon from '@mui/icons-material/Note';
 import EmailIcon from '@mui/icons-material/Email';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { usePickup } from '../contexts/PickupContext';
 
 const StudentDetail = ({ student, onEdit, onClose }) => {
+  const { updateStudent, fetchStudents } = usePickup();
+  const [confirmDialogOpen, setConfirmDialogOpen] = React.useState(false);
+  
   console.log("StudentDetail - 받은 학생 정보:", student);
   
   if (!student) {
@@ -41,6 +51,70 @@ const StudentDetail = ({ student, onEdit, onClose }) => {
       return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
     } catch (e) {
       return dateString;
+    }
+  };
+  
+  const handleWithdrawal = async () => {
+    try {
+      console.log('퇴원 처리 시작:', student.id, student.name);
+      
+      // 학생의 isActive 상태를 false로 변경하고 updatedAt 필드 추가
+      await updateStudent(student.id, { 
+        isActive: false,
+        updatedAt: new Date().toISOString()
+      });
+      
+      console.log(`${student.name} 학생이 퇴원 처리되었습니다.`);
+      
+      // 성공 메시지 표시
+      alert(`${student.name} 학생이 퇴원 처리되었습니다.`);
+      
+      setConfirmDialogOpen(false);
+      
+      // 학생 데이터 새로고침
+      await fetchStudents();
+      
+      // 상세 정보 창 닫기
+      onClose();
+      
+      // 페이지 새로고침 (백업 방법)
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.error('학생 퇴원 처리 중 오류 발생:', error);
+      alert(`퇴원 처리 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+    }
+  };
+  
+  const handleReactivate = async () => {
+    try {
+      console.log('재등록 처리 시작:', student.id, student.name);
+      
+      // 학생의 isActive 상태를 true로 변경하고 updatedAt 필드 추가
+      await updateStudent(student.id, { 
+        isActive: true,
+        updatedAt: new Date().toISOString()
+      });
+      
+      console.log(`${student.name} 학생이 재등록 처리되었습니다.`);
+      
+      // 성공 메시지 표시
+      alert(`${student.name} 학생이 재등록 처리되었습니다.`);
+      
+      // 학생 데이터 새로고침
+      await fetchStudents();
+      
+      // 상세 정보 창 닫기
+      onClose();
+      
+      // 페이지 새로고침 (백업 방법)
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.error('학생 재등록 처리 중 오류 발생:', error);
+      alert(`재등록 처리 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
     }
   };
 
@@ -115,6 +189,27 @@ const StudentDetail = ({ student, onEdit, onClose }) => {
               >
                 정보 수정
               </Button>
+              {student.isActive !== false ? (
+                <Button 
+                  variant="contained" 
+                  color="error" 
+                  startIcon={<LogoutIcon />}
+                  onClick={() => setConfirmDialogOpen(true)}
+                  size="small"
+                >
+                  퇴원
+                </Button>
+              ) : (
+                <Button 
+                  variant="contained" 
+                  color="success" 
+                  startIcon={<PersonIcon />}
+                  onClick={handleReactivate}
+                  size="small"
+                >
+                  재등록
+                </Button>
+              )}
               <Button 
                 variant="outlined" 
                 color="secondary" 
@@ -265,6 +360,27 @@ const StudentDetail = ({ student, onEdit, onClose }) => {
           </Grid>
         )}
       </Grid>
+      
+      {/* 퇴원 확인 다이얼로그 */}
+      <Dialog
+        open={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+      >
+        <DialogTitle>학생 퇴원 처리</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {student.name} 학생을 퇴원 처리하시겠습니까? 퇴원 처리된 학생은 기본 화면에서 표시되지 않습니다.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDialogOpen(false)} color="primary">
+            취소
+          </Button>
+          <Button onClick={handleWithdrawal} color="error" variant="contained">
+            퇴원 처리
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 };

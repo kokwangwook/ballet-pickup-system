@@ -1,0 +1,22 @@
+{
+  "settings": {
+    "arrival": {
+      "enabled": true,
+      "advanceMinutes": 3,
+      "maxRetries": 2,
+      "retryIntervalMinutes": 1,
+      "excludeStudents": [],
+      "excludeStations": [],
+      "excludeTimes": []
+    },
+    "departure": {
+      "enabled": true,
+      "advanceMinutes": 3,
+      "maxRetries": 2,
+      "retryIntervalMinutes": 1,
+      "excludeStudents": [],
+      "excludeStations": [],
+      "excludeTimes": []
+    }
+  }
+} 

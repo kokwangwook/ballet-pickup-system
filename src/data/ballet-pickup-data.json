@@ -1,0 +1,835 @@
+{
+  "schedules": {
+    "monday_wednesday": {
+      "arrival": {
+        "15:30": {
+          "classTime": "15:30",
+          "departureTime": "14:30",
+          "students": [
+            {
+              "id": "mw-1",
+              "name": "최진리",
+              "shortId": "94",
+              "location": "애시앙 110동",
+              "pickupTime": "14:50",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-2",
+              "name": "이제인",
+              "shortId": "72",
+              "location": "중흥3차",
+              "pickupTime": "14:50",
+              "contact": "",
+              "note": "월,화,수,목"
+            },
+            {
+              "id": "mw-3",
+              "name": "최지원",
+              "shortId": "",
+              "location": "빛누리초정문",
+              "pickupTime": "15:00",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-4",
+              "name": "서라온",
+              "shortId": "76",
+              "location": "빛누리초 에시앙1122동",
+              "pickupTime": "15:00",
+              "contact": "",
+              "note": "월,수"
+            },
+            {
+              "id": "mw-5",
+              "name": "고보영",
+              "shortId": "92",
+              "location": "빛누리초",
+              "pickupTime": "15:00",
+              "contact": "",
+              "note": "월"
+            }
+          ]
+        },
+        "16:40": {
+          "classTime": "16:40",
+          "departureTime": "15:30",
+          "students": [
+            {
+              "id": "mw-6",
+              "name": "김은우",
+              "shortId": "26",
+              "location": "한빛유치원",
+              "pickupTime": "15:30",
+              "contact": "010-3899-4437(엄마)",
+              "note": "6세"
+            },
+            {
+              "id": "mw-7",
+              "name": "김윤서",
+              "shortId": "27",
+              "location": "한빛유치원",
+              "pickupTime": "15:30",
+              "contact": "010-2848-4510(엄마)",
+              "note": "7세"
+            },
+            {
+              "id": "mw-8",
+              "name": "오윤서",
+              "shortId": "",
+              "location": "빛그린유치원 4세 3반",
+              "pickupTime": "15:51",
+              "contact": "010-8915-3097",
+              "note": "7세"
+            },
+            {
+              "id": "mw-9",
+              "name": "최은서",
+              "shortId": "87",
+              "location": "빛그린유치원",
+              "pickupTime": "15:30",
+              "contact": "010-6619-7657 할머니 87 엄마 82",
+              "note": "7세"
+            },
+            {
+              "id": "mw-10",
+              "name": "김도하",
+              "shortId": "60",
+              "location": "빛그린유치원 3세2반",
+              "pickupTime": "15:30",
+              "contact": "010-7376-4865",
+              "note": ""
+            },
+            {
+              "id": "mw-11",
+              "name": "이나은",
+              "shortId": "100",
+              "location": "빛그린유치원",
+              "pickupTime": "15:30",
+              "contact": "010-9450-3900(엄마)",
+              "note": "다음주부터"
+            },
+            {
+              "id": "mw-12",
+              "name": "김주아",
+              "shortId": "19",
+              "location": "빛그린유치원",
+              "pickupTime": "15:30",
+              "contact": "010-9156-0214 엄마",
+              "note": "5세, 중흥1동101"
+            },
+            {
+              "id": "mw-13",
+              "name": "이지유",
+              "shortId": "5",
+              "location": "빛누리 즐거운2반 220번",
+              "pickupTime": "15:30",
+              "contact": "010-7700-7148",
+              "note": "에시앙 1120동"
+            },
+            {
+              "id": "mw-14",
+              "name": "권예나",
+              "shortId": "13",
+              "location": "빛누리 즐거운2반 220번",
+              "pickupTime": "15:30",
+              "contact": "010-7670-5580 어머니",
+              "note": "코오롱하늘채"
+            },
+            {
+              "id": "mw-15",
+              "name": "최라원",
+              "shortId": "57",
+              "location": "빛누리유치원 행복한1반 215번",
+              "pickupTime": "15:30",
+              "contact": "010-6608-2656 어머니",
+              "note": ""
+            }
+          ]
+        },
+        "17:40": {
+          "classTime": "17:40",
+          "departureTime": "16:40",
+          "students": [
+            {
+              "id": "mw-16",
+              "name": "고나윤",
+              "shortId": "59",
+              "location": "영무예다음 107동 1-2",
+              "pickupTime": "16:40",
+              "contact": "010-2121-7124(엄마)",
+              "note": ""
+            },
+            {
+              "id": "mw-17",
+              "name": "박리온",
+              "shortId": "58",
+              "location": "영무예다음 107동 1-2",
+              "pickupTime": "16:40",
+              "contact": "010-7132-0484(엄마)",
+              "note": ""
+            },
+            {
+              "id": "mw-18",
+              "name": "임단아",
+              "shortId": "",
+              "location": "한국방송통신전파진흥원어린이집 별빛반",
+              "pickupTime": "16:40",
+              "contact": "010-5006-0772 (엄마)",
+              "note": "5세"
+            },
+            {
+              "id": "mw-19",
+              "name": "조서율",
+              "shortId": "62",
+              "location": "빛그린유치원",
+              "pickupTime": "16:40",
+              "contact": "010-9658-3131",
+              "note": "6세"
+            },
+            {
+              "id": "mw-20",
+              "name": "강한서",
+              "shortId": "",
+              "location": "빛그린유치원 3세 3반",
+              "pickupTime": "16:40",
+              "contact": "010-4321-1121",
+              "note": ""
+            },
+            {
+              "id": "mw-21",
+              "name": "장하윤",
+              "shortId": "31",
+              "location": "빛누리유치원 (돌봄212번)",
+              "pickupTime": "16:40",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-22",
+              "name": "양라윤",
+              "shortId": "63",
+              "location": "빛누리유치원 (돌봄212번)",
+              "pickupTime": "16:40",
+              "contact": "010-2170-2220 어머니",
+              "note": ""
+            },
+            {
+              "id": "mw-23",
+              "name": "임예령",
+              "shortId": "99",
+              "location": "빛누리 유치원",
+              "pickupTime": "16:40",
+              "contact": "010-4174-3623 엄마",
+              "note": ""
+            }
+          ]
+        },
+        "18:40": {
+          "classTime": "18:40",
+          "departureTime": "17:40",
+          "students": [
+            {
+              "id": "mw-24",
+              "name": "이지유",
+              "shortId": "5",
+              "location": "에시앙 1120동",
+              "pickupTime": "17:40",
+              "contact": "010-7700-7148(엄마)",
+              "note": ""
+            },
+            {
+              "id": "mw-25",
+              "name": "김윤서",
+              "shortId": "6",
+              "location": "트이다학원",
+              "pickupTime": "17:40",
+              "contact": "010-2848-4510(엄마)",
+              "note": "7세"
+            },
+            {
+              "id": "mw-26",
+              "name": "최은서",
+              "shortId": "82",
+              "location": "부영3차 315동(관리동하차)",
+              "pickupTime": "17:40",
+              "contact": "010-6619-7657 할머니 87 엄마 82",
+              "note": "7세"
+            },
+            {
+              "id": "mw-27",
+              "name": "박연후",
+              "shortId": "35",
+              "location": "대방 102동",
+              "pickupTime": "18:05",
+              "contact": "",
+              "note": "등원"
+            }
+          ]
+        }
+      },
+      "departure": {
+        "16:50": {
+          "classTime": "15:30",
+          "departureTime": "16:50",
+          "students": [
+            {
+              "id": "mw-d-1",
+              "name": "이채율",
+              "shortId": "67",
+              "location": "중흥1단지 113동",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": "목"
+            },
+            {
+              "id": "mw-d-2",
+              "name": "고보영",
+              "shortId": "92",
+              "location": "중흥1차 정류장",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-3",
+              "name": "백가원",
+              "shortId": "28",
+              "location": "태권도학원(중흥2차앞)",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": "월, (수) 조아트미술학원"
+            },
+            {
+              "id": "mw-d-4",
+              "name": "김유하",
+              "shortId": "",
+              "location": "써밋빌리지15",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": "월,화,목, (수) 중흥2차 몬스터매스수학학원"
+            },
+            {
+              "id": "mw-d-5",
+              "name": "최진리",
+              "shortId": "94",
+              "location": "에시앙 1104동",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-6",
+              "name": "신나라",
+              "shortId": "",
+              "location": "빛누리초 에시앙1122동",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-7",
+              "name": "서라온",
+              "shortId": "76",
+              "location": "빛누리초 에시앙1122동",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": "월,수"
+            },
+            {
+              "id": "mw-d-8",
+              "name": "최지원",
+              "shortId": "",
+              "location": "우미린 103동",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": "월, (수) 중흥2차 몬스터매스수학학원"
+            },
+            {
+              "id": "mw-d-9",
+              "name": "이제인",
+              "shortId": "72",
+              "location": "중흥3차 (엔젤음악학원)",
+              "pickupTime": "16:50",
+              "contact": "",
+              "note": "월,화,수,목"
+            }
+          ]
+        },
+        "18:40": {
+          "classTime": "17:40",
+          "departureTime": "18:40",
+          "students": [
+            {
+              "id": "mw-d-10",
+              "name": "진서윤",
+              "shortId": "7",
+              "location": "중흥 1차(버스장)",
+              "pickupTime": "18:40",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-11",
+              "name": "김지원",
+              "shortId": "16",
+              "location": "중흥113동",
+              "pickupTime": "18:40",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-12",
+              "name": "이윤아",
+              "shortId": "23",
+              "location": "중흥 104동",
+              "pickupTime": "18:40",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-13",
+              "name": "임예령",
+              "shortId": "99",
+              "location": "중흥3차 304동 3-4",
+              "pickupTime": "18:40",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-14",
+              "name": "양라윤",
+              "shortId": "63",
+              "location": "에시앙 1111 3-4",
+              "pickupTime": "18:40",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-15",
+              "name": "장하윤",
+              "shortId": "31",
+              "location": "에시앙1102 1-2",
+              "pickupTime": "18:40",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "mw-d-16",
+              "name": "조서율",
+              "shortId": "62",
+              "location": "부영3단지 303동 1-2라인",
+              "pickupTime": "18:40",
+              "contact": "010-9658-3131",
+              "note": "6세"
+            },
+            {
+              "id": "mw-d-17",
+              "name": "고나윤",
+              "shortId": "59",
+              "location": "영무예다음 108동 3-4",
+              "pickupTime": "18:40",
+              "contact": "010-2121-7124(엄마)",
+              "note": ""
+            },
+            {
+              "id": "mw-d-18",
+              "name": "박리온",
+              "shortId": "58",
+              "location": "영무예다음 108동 3-4",
+              "pickupTime": "18:40",
+              "contact": "010-7132-0484(엄마)",
+              "note": ""
+            }
+          ]
+        },
+        "19:40": {
+          "classTime": "18:40",
+          "departureTime": "19:40",
+          "students": [
+            {
+              "id": "mw-d-19",
+              "name": "박연후",
+              "shortId": "35",
+              "location": "대방 102동",
+              "pickupTime": "19:40",
+              "contact": "",
+              "note": ""
+            }
+          ]
+        }
+      }
+    },
+    "tuesday_thursday": {
+      "arrival": {
+        "15:30": {
+          "classTime": "15:30",
+          "departureTime": "14:30",
+          "students": [
+            {
+              "id": "tt-1",
+              "name": "황인아",
+              "shortId": "97",
+              "location": "돌봄4반",
+              "pickupTime": "14:30",
+              "contact": "061-338-0194(010-6579-8050)",
+              "note": ""
+            },
+            {
+              "id": "tt-2",
+              "name": "신소예",
+              "shortId": "90",
+              "location": "빛가람초등학교",
+              "pickupTime": "14:40",
+              "contact": "010-9246-1915",
+              "note": "화,목"
+            },
+            {
+              "id": "tt-3",
+              "name": "김수아",
+              "shortId": "84",
+              "location": "에시앙 1104동 1-2호",
+              "pickupTime": "14:53",
+              "contact": "010-9480-0735(엄마)",
+              "note": ""
+            },
+            {
+              "id": "tt-4",
+              "name": "박서희",
+              "shortId": "",
+              "location": "중흥3차",
+              "pickupTime": "15:05",
+              "contact": "",
+              "note": "목"
+            },
+            {
+              "id": "tt-5",
+              "name": "이제인",
+              "shortId": "72",
+              "location": "중흥3차",
+              "pickupTime": "15:00",
+              "contact": "",
+              "note": "월,화,수,목"
+            },
+            {
+              "id": "tt-6",
+              "name": "이라희",
+              "shortId": "93",
+              "location": "돌봄교실",
+              "pickupTime": "14:30",
+              "contact": "010-6487-2215 강지숙 선생님",
+              "note": ""
+            },
+            {
+              "id": "tt-7",
+              "name": "조믿음",
+              "shortId": "98",
+              "location": "돌봄교실",
+              "pickupTime": "14:30",
+              "contact": "010-4592-8248 유정애 선생님",
+              "note": ""
+            },
+            {
+              "id": "tt-8",
+              "name": "박가을",
+              "shortId": "",
+              "location": "중흥1차 108동",
+              "pickupTime": "14:30",
+              "contact": "",
+              "note": ""
+            }
+          ]
+        },
+        "16:30": {
+          "classTime": "16:30",
+          "departureTime": "15:30",
+          "students": [
+            {
+              "id": "tt-9",
+              "name": "서은솔",
+              "shortId": "74",
+              "location": "한빛유치원",
+              "pickupTime": "15:30",
+              "contact": "010-2622-0172",
+              "note": ""
+            },
+            {
+              "id": "tt-10",
+              "name": "권루나",
+              "shortId": "75",
+              "location": "한빛유치원",
+              "pickupTime": "15:30",
+              "contact": "010-2926-9939",
+              "note": ""
+            },
+            {
+              "id": "tt-11",
+              "name": "이은서",
+              "shortId": "80",
+              "location": "한빛유치원",
+              "pickupTime": "15:30",
+              "contact": "010-9487-4825",
+              "note": ""
+            },
+            {
+              "id": "tt-12",
+              "name": "이서우",
+              "shortId": "73",
+              "location": "도담유치원",
+              "pickupTime": "15:50",
+              "contact": "010-2541-1938",
+              "note": "5세"
+            },
+            {
+              "id": "tt-13",
+              "name": "이채원",
+              "shortId": "",
+              "location": "라원유치원",
+              "pickupTime": "16:05",
+              "contact": "010-8636-2554",
+              "note": ""
+            },
+            {
+              "id": "tt-14",
+              "name": "김태린",
+              "shortId": "",
+              "location": "라원유치원",
+              "pickupTime": "16:05",
+              "contact": "010-8636-2554",
+              "note": "18일부터 등원"
+            },
+            {
+              "id": "tt-15",
+              "name": "김하린",
+              "shortId": "10",
+              "location": "빛누리유치원 (220)",
+              "pickupTime": "16:00",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "tt-16",
+              "name": "김아린",
+              "shortId": "",
+              "location": "빛누리유치원 (220)",
+              "pickupTime": "16:00",
+              "contact": "",
+              "note": ""
+            }
+          ]
+        },
+        "17:30": {
+          "classTime": "17:30",
+          "departureTime": "16:30",
+          "students": [
+            {
+              "id": "tt-17",
+              "name": "박가을",
+              "shortId": "",
+              "location": "중흥1차 108동",
+              "pickupTime": "16:30",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "tt-18",
+              "name": "김유하",
+              "shortId": "",
+              "location": "써밋빌리지15",
+              "pickupTime": "16:30",
+              "contact": "",
+              "note": "화,목"
+            },
+            {
+              "id": "tt-19",
+              "name": "박서희",
+              "shortId": "",
+              "location": "중흥3차 303동",
+              "pickupTime": "16:30",
+              "contact": "",
+              "note": "화"
+            },
+            {
+              "id": "tt-20",
+              "name": "김수아",
+              "shortId": "84",
+              "location": "에시앙 1104동 1-2호 라인",
+              "pickupTime": "16:30",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "tt-21",
+              "name": "이제인",
+              "shortId": "72",
+              "location": "중흥3차 311",
+              "pickupTime": "16:30",
+              "contact": "",
+              "note": "월,화,수,목"
+            },
+            {
+              "id": "tt-22",
+              "name": "신소예",
+              "shortId": "77",
+              "location": "LH3단지 301동 1~2",
+              "pickupTime": "16:30",
+              "contact": "",
+              "note": "화,목"
+            },
+            {
+              "id": "tt-23",
+              "name": "최승리",
+              "shortId": "96",
+              "location": "에시앙1104동",
+              "pickupTime": "16:30",
+              "contact": "",
+              "note": "등원"
+            },
+            {
+              "id": "tt-24",
+              "name": "설지유",
+              "shortId": "91",
+              "location": "중흥 209동",
+              "pickupTime": "17:15",
+              "contact": "",
+              "note": "등원"
+            }
+          ]
+        }
+      },
+      "departure": {
+        "17:30": {
+          "classTime": "16:30",
+          "departureTime": "17:30",
+          "students": [
+            {
+              "id": "tt-d-1",
+              "name": "김하린",
+              "shortId": "10",
+              "location": "우미린101동",
+              "pickupTime": "17:30",
+              "contact": "",
+              "note": "화,목"
+            },
+            {
+              "id": "tt-d-2",
+              "name": "김아린",
+              "shortId": "",
+              "location": "우미린101동",
+              "pickupTime": "17:30",
+              "contact": "",
+              "note": "화,목"
+            },
+            {
+              "id": "tt-d-3",
+              "name": "허가빈",
+              "shortId": "22",
+              "location": "우미린101동",
+              "pickupTime": "17:30",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "tt-d-4",
+              "name": "김태린",
+              "shortId": "",
+              "location": "대방1차 103동",
+              "pickupTime": "17:30",
+              "contact": "010-9432-3782",
+              "note": ""
+            },
+            {
+              "id": "tt-d-5",
+              "name": "권루나",
+              "shortId": "75",
+              "location": "영무예다음",
+              "pickupTime": "17:30",
+              "contact": "010-2926-9939",
+              "note": "화,목"
+            },
+            {
+              "id": "tt-d-6",
+              "name": "이서우",
+              "shortId": "83",
+              "location": "영무예다음 108동 3-4",
+              "pickupTime": "17:30",
+              "contact": "",
+              "note": ""
+            },
+            {
+              "id": "tt-d-7",
+              "name": "이은서",
+              "shortId": "80",
+              "location": "영무예다음 107동",
+              "pickupTime": "17:30",
+              "contact": "010-9487-4825",
+              "note": ""
+            },
+            {
+              "id": "tt-d-8",
+              "name": "서은솔",
+              "shortId": "74",
+              "location": "에듀캐슬 106동 1-2라인",
+              "pickupTime": "17:30",
+              "contact": "010-2622-0172",
+              "note": "화,목"
+            }
+          ]
+        },
+        "18:30": {
+          "classTime": "17:30",
+          "departureTime": "18:30",
+          "students": [
+            {
+              "id": "tt-d-9",
+              "name": "설지유",
+              "shortId": "91",
+              "location": "중흥 209동",
+              "pickupTime": "18:30",
+              "contact": "",
+              "note": ""
+            }
+          ]
+        }
+      }
+    },
+    "friday": {
+      "arrival": {
+        "18:40": {
+          "classTime": "18:40",
+          "departureTime": "18:00",
+          "students": [
+            {
+              "id": "f-1",
+              "name": "박연후",
+              "shortId": "35",
+              "location": "대방 102동",
+              "pickupTime": "18:00",
+              "contact": "",
+              "note": "월,수,금"
+            }
+          ]
+        }
+      },
+      "departure": {
+        "19:40": {
+          "classTime": "18:40",
+          "departureTime": "19:40",
+          "students": [
+            {
+              "id": "f-d-1",
+              "name": "박연후",
+              "shortId": "35",
+              "location": "대방 102동",
+              "pickupTime": "19:40",
+              "contact": "",
+              "note": "월,수,금"
+            }
+          ]
+        }
+      }
+    }
+  }
+} 

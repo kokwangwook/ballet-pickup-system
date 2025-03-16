@@ -1,30 +1,73 @@
 [
   {
+    "id": "student1",
+    "name": "김학생",
+    "shortId": 1,
+    "classTime": "16:30",
+    "motherPhone": "01012345678",
+    "fatherPhone": "01087654321",
+    "studentPhone": "",
+    "school": "서울초등학교",
+    "grade": "3",
+    "arrivalStatus": "대기중",
+    "departureStatus": "대기중",
+    "isActive": true
+  },
+  {
+    "id": "student2",
+    "name": "이학생",
+    "shortId": 2,
+    "classTime": "17:30",
+    "motherPhone": "01023456789",
+    "fatherPhone": "",
+    "studentPhone": "",
+    "school": "서울초등학교",
+    "grade": "4",
+    "arrivalStatus": "대기중",
+    "departureStatus": "대기중",
+    "isActive": true
+  },
+  {
+    "id": "student3",
+    "name": "박학생",
+    "shortId": 3,
+    "classTime": "18:30",
+    "motherPhone": "01034567890",
+    "fatherPhone": "01098765432",
+    "studentPhone": "",
+    "school": "서울초등학교",
+    "grade": "5",
+    "arrivalStatus": "대기중",
+    "departureStatus": "대기중",
+    "isActive": true
+  },
+  {
     "id": "student-1",
     "name": "이재인",
     "shortId": 72,
-    "classTime": "19:30",
+    "classTime": "15:30",
     "classes": [
-      "19:30"
+      "15:30"
     ],
     "arrivalTime": "14:50",
     "departureTime": "16:20",
-    "arrivalLocation": "집앞",
+    "arrivalLocation": "중흥3차 106동",
     "departureLocation": "엔젤학원앞",
     "arrivalStatus": true,
-    "departureStatus": false,
+    "departureStatus": true,
     "isActive": true,
     "registrationType": "정회원",
-    "motherPhone": "010-7161-5623",
-    "studentPhone": "010-8119-5626",
     "classDays": [
       "월",
       "화",
-      "목"
+      "목",
+      "수"
     ],
     "registrationDate": "2025-03-10T15:00:00.000Z",
-    "fatherPhone": "",
-    "otherPhone": ""
+    "otherPhone": "",
+    "school": "빛누리초등학교",
+    "birthDate": null,
+    "grade": "2학년"
   },
   {
     "id": "student-2",
@@ -48,9 +91,6 @@
       "금"
     ],
     "registrationDate": "2025-03-01T15:00:00.000Z",
-    "motherPhone": "",
-    "studentPhone": "",
-    "fatherPhone": "",
     "otherPhone": "",
     "school": "",
     "birthDate": null,
@@ -66,8 +106,8 @@
     ],
     "arrivalTime": "14:50",
     "departureTime": "16:20",
-    "arrivalLocation": "중앙역",
-    "departureLocation": "공원 입구",
+    "arrivalLocation": "빛누리초정문 승강장",
+    "departureLocation": "중흥1차 108동",
     "arrivalStatus": true,
     "departureStatus": true,
     "isActive": true,
@@ -79,7 +119,11 @@
       "목",
       "금"
     ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
+    "registrationDate": "2025-03-10T15:00:00.000Z",
+    "otherPhone": "",
+    "school": "빛누리초등학교",
+    "birthDate": null,
+    "grade": ""
   },
   {
     "id": "student-4",
@@ -103,48 +147,46 @@
       "목"
     ],
     "registrationDate": "2025-03-10T15:00:00.000Z",
-    "motherPhone": "",
-    "studentPhone": "",
-    "fatherPhone": "",
     "otherPhone": ""
   },
   {
     "id": "student-5",
     "name": "최라온",
-    "shortId": 57,
+    "shortId": "101",
     "classTime": "16:30",
     "classes": [
       "16:30"
     ],
     "arrivalTime": "15:50",
     "departureTime": "17:20",
-    "arrivalLocation": "공원 입구",
-    "departureLocation": "공원 입구",
+    "arrivalLocation": "빛누리유치원",
+    "departureLocation": "",
     "arrivalStatus": true,
     "departureStatus": true,
     "isActive": true,
     "registrationType": "정회원",
     "classDays": [
       "월",
-      "화",
-      "수",
-      "목",
-      "금"
+      "수"
     ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
+    "registrationDate": "2025-03-10T15:00:00.000Z",
+    "otherPhone": "",
+    "school": "빛누리유치원",
+    "birthDate": null,
+    "grade": ""
   },
   {
     "id": "student-6",
     "name": "허가빈",
-    "shortId": 69,
+    "shortId": "22",
     "classTime": "16:30",
     "classes": [
       "16:30"
     ],
     "arrivalTime": "15:50",
     "departureTime": "17:20",
-    "arrivalLocation": "중앙역",
-    "departureLocation": "중앙역",
+    "arrivalLocation": "",
+    "departureLocation": "에시앙101동",
     "arrivalStatus": true,
     "departureStatus": true,
     "isActive": true,
@@ -156,32 +198,11 @@
       "목",
       "금"
     ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
-  },
-  {
-    "id": "student-7",
-    "name": "정민준",
-    "shortId": 33,
-    "classTime": "17:30",
-    "classes": [
-      "17:30"
-    ],
-    "arrivalTime": "16:50",
-    "departureTime": "18:20",
-    "arrivalLocation": "학원 앞",
-    "departureLocation": "학원 앞",
-    "arrivalStatus": true,
-    "departureStatus": true,
-    "isActive": true,
-    "registrationType": "정회원",
-    "classDays": [
-      "월",
-      "화",
-      "수",
-      "목",
-      "금"
-    ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
+    "registrationDate": "2025-03-10T15:00:00.000Z",
+    "otherPhone": "",
+    "school": "",
+    "birthDate": null,
+    "grade": ""
   },
   {
     "id": "student-8",
@@ -234,81 +255,6 @@
     "registrationDate": "2025-03-10T15:00:00.000Z"
   },
   {
-    "id": "student-10",
-    "name": "윤서윤",
-    "shortId": 52,
-    "classTime": "18:30",
-    "classes": [
-      "18:30"
-    ],
-    "arrivalTime": "17:50",
-    "departureTime": "19:20",
-    "arrivalLocation": "학원 앞",
-    "departureLocation": "공원 입구",
-    "arrivalStatus": true,
-    "departureStatus": false,
-    "isActive": true,
-    "registrationType": "정회원",
-    "classDays": [
-      "월",
-      "화",
-      "수",
-      "목",
-      "금"
-    ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
-  },
-  {
-    "id": "student-11",
-    "name": "임도윤",
-    "shortId": 85,
-    "classTime": "19:30",
-    "classes": [
-      "19:30"
-    ],
-    "arrivalTime": "18:50",
-    "departureTime": "20:20",
-    "arrivalLocation": "공원 입구",
-    "departureLocation": "중앙역",
-    "arrivalStatus": true,
-    "departureStatus": false,
-    "isActive": true,
-    "registrationType": "정회원",
-    "classDays": [
-      "월",
-      "화",
-      "수",
-      "목",
-      "금"
-    ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
-  },
-  {
-    "id": "student-12",
-    "name": "오하린",
-    "shortId": 39,
-    "classTime": "19:30",
-    "classes": [
-      "19:30"
-    ],
-    "arrivalTime": "18:50",
-    "departureTime": "20:20",
-    "arrivalLocation": "중앙역",
-    "departureLocation": "학원 앞",
-    "arrivalStatus": true,
-    "departureStatus": false,
-    "isActive": true,
-    "registrationType": "정회원",
-    "classDays": [
-      "월",
-      "화",
-      "수",
-      "목",
-      "금"
-    ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
-  },
-  {
     "id": "student-13",
     "name": "고광욱",
     "shortId": "11",
@@ -316,23 +262,21 @@
     "classes": [
       "16:30"
     ],
-    "arrivalLocation": "집",
-    "departureLocation": "집",
+    "arrivalLocation": "",
+    "departureLocation": "대호동 대방노블랜트 2차아파트 203동",
     "arrivalStatus": true,
     "departureStatus": true,
     "isActive": true,
-    "motherPhone": "010-5623-8956",
-    "fatherPhone": "",
-    "studentPhone": "",
     "otherPhone": "",
     "classDays": [
       "월",
       "화",
-      "수",
-      "목",
-      "금"
+      "목"
     ],
-    "registrationDate": "2025-03-10T15:00:00.000Z"
+    "registrationDate": "2025-03-10T15:00:00.000Z",
+    "school": "",
+    "birthDate": null,
+    "grade": ""
   },
   {
     "id": "student-14",
@@ -347,9 +291,6 @@
     "arrivalStatus": false,
     "departureStatus": true,
     "isActive": true,
-    "motherPhone": "",
-    "fatherPhone": "",
-    "studentPhone": "",
     "otherPhone": "",
     "classDays": [
       "월",
@@ -373,9 +314,6 @@
     "arrivalStatus": false,
     "departureStatus": false,
     "isActive": true,
-    "motherPhone": "",
-    "fatherPhone": "",
-    "studentPhone": "",
     "otherPhone": "",
     "classDays": [
       "화",
@@ -385,5 +323,69 @@
     "school": "",
     "birthDate": "1962-12-11T15:00:00.000Z",
     "grade": ""
+  },
+  {
+    "id": "1741728924077",
+    "name": "ㅇㅇㅇ",
+    "shortId": "12",
+    "classTime": "17:30",
+    "classes": [
+      "17:30"
+    ],
+    "arrivalLocation": "",
+    "departureLocation": "",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "otherPhone": "",
+    "classDays": [
+      "월",
+      "화",
+      "수",
+      "목"
+    ],
+    "registrationDate": "2025-03-11T21:35:08.604Z"
+  },
+  {
+    "id": "1741730008606",
+    "name": "ghdr",
+    "shortId": "11",
+    "classTime": "17:30",
+    "classes": [
+      "17:30"
+    ],
+    "arrivalLocation": "deeeee",
+    "departureLocation": "wlvkdkd",
+    "arrivalStatus": false,
+    "departureStatus": false,
+    "isActive": true,
+    "otherPhone": "",
+    "classDays": [
+      "월",
+      "화"
+    ],
+    "registrationDate": "2025-03-11T21:53:08.466Z"
+  },
+  {
+    "id": "1741730087916",
+    "name": "고광욱",
+    "shortId": "11",
+    "classTime": "16:30",
+    "classes": [
+      "16:30"
+    ],
+    "arrivalLocation": "집",
+    "departureLocation": "집",
+    "arrivalStatus": true,
+    "departureStatus": false,
+    "isActive": true,
+    "otherPhone": "",
+    "classDays": [
+      "월",
+      "화",
+      "수",
+      "목"
+    ],
+    "registrationDate": "2025-03-11T21:54:25.727Z"
   }
 ]

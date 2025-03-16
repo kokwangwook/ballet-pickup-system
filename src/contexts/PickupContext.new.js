@@ -321,7 +321,7 @@ export const PickupProvider = ({ children }) => {
         } else {
           console.warn(`학생 ${name}의 수업 시간 정보가 없습니다.`);
           // 임시 조치: 기본 수업 시간 할당
-          classTimes = ["10:00", "14:00", "16:00", "18:00"];
+          classTimes = ["15:30", "16:30", "17:30", "18:30"];
         }
         
         // 처리된 학생 데이터 객체 생성
@@ -369,7 +369,7 @@ export const PickupProvider = ({ children }) => {
       // 오류 발생 시 테스트 데이터로 대체
       console.log("오류로 인해 테스트 데이터를 사용합니다.");
       const testStudents = [];
-      const classTimeOptions = ["10:00", "14:00", "16:00", "18:00"];
+      const classTimeOptions = ["15:30", "16:30", "17:30", "18:30"];
       
       for (let i = 1; i <= 15; i++) {
         testStudents.push({

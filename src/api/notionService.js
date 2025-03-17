@@ -33,13 +33,23 @@ const notion = new Client({
  * @returns {string} 완전한 API URL
  */
 const getApiUrl = (endpoint) => {
-  // Netlify 배포 URL인지 확인
-  const isNetlify = window.location.hostname.includes('netlify.app');
+  // 현재 URL 확인
+  const currentUrl = window.location.href;
+  const hostname = window.location.hostname;
+  
+  console.log('Notion API - 현재 URL:', currentUrl);
+  console.log('Notion API - 호스트명:', hostname);
+  
+  // Netlify 배포 URL인지 명시적으로 확인
+  const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlify.com');
   
   // 로컬 개발 환경이면 /api/* 형태로, Netlify 환경이면 /.netlify/functions/api/* 형태로 경로 구성
   const baseUrl = isNetlify ? '/.netlify/functions' : '';
-  console.log(`Notion API 요청 URL 구성: ${baseUrl}${endpoint} (Netlify: ${isNetlify})`);
-  return `${baseUrl}${endpoint}`;
+  
+  const fullUrl = `${baseUrl}${endpoint}`;
+  console.log(`Notion API 요청 URL 구성: ${fullUrl} (Netlify 환경: ${isNetlify})`);
+  
+  return fullUrl;
 };
 
 /**

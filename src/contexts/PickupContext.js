@@ -174,60 +174,85 @@ export const PickupProvider = ({ children }) => {
     setError(null);
     
     try {
-      // Firebase에서 학생 데이터 가져오기
+      console.log("학생 데이터 가져오기 시작");
+      // 서버 API를 통해 학생 데이터 가져오기
       const studentsData = await fetchStudents();
       
-      if (studentsData && Array.isArray(studentsData)) {
-        setAllStudents(studentsData);
-        filterStudentsByDay(selectedDayOfWeek, studentsData);
-        
-        // 학생 위치 초기화
-        const initialLocations = {
-          arrival: {},
-          departure: {}
-        };
-        
-        // 도착/출발 상태 초기화
-        const initialArrival = {};
-        const initialDeparture = {};
-        
-        studentsData.forEach(student => {
-          if (student.id) {
-            initialLocations.arrival[student.id] = student.arrivalLocationId || 'location_1';
-            initialLocations.departure[student.id] = student.departureLocationId || 'location_1';
-            
-            initialArrival[student.id] = student.arrivalStatus || false;
-            initialDeparture[student.id] = student.departureStatus || false;
-          }
-        });
-        
-        setStudentLocations(initialLocations);
-        setArrivalStatus(initialArrival);
-        setDepartureStatus(initialDeparture);
-      } else {
-        console.error("학생 데이터가 유효하지 않습니다:", studentsData);
-        setError("학생 데이터를 불러오는데 실패했습니다.");
-      }
+      console.log("학생 데이터 로드 성공:", studentsData.length, "명");
+      
+      // 비활성 학생 필터링
+      const activeStudents = studentsData.filter(student => {
+        if (!student.isActive) {
+          console.log(`퇴원 처리된 학생 제외 (fetchStudents): ${student.name}`);
+          return false;
+        }
+        return true;
+      });
+      
+      // 모든 학생 데이터와 활성 학생 데이터 모두 설정
+      setAllStudents(studentsData);
+      setStudents(activeStudents);
+      
+      // 학생 위치 초기화
+      const initialLocations = {
+        arrival: {},
+        departure: {}
+      };
+      
+      // 도착/출발 상태 초기화
+      const initialArrival = {};
+      const initialDeparture = {};
+      
+      activeStudents.forEach(student => {
+        if (student.id) {
+          initialLocations.arrival[student.id] = student.arrivalLocationId || 'location_1';
+          initialLocations.departure[student.id] = student.departureLocationId || 'location_1';
+          
+          initialArrival[student.id] = student.arrivalStatus || false;
+          initialDeparture[student.id] = student.departureStatus || false;
+        }
+      });
+      
+      setStudentLocations(initialLocations);
+      setArrivalStatus(initialArrival);
+      setDepartureStatus(initialDeparture);
+      
+      console.log(`${activeStudents.length}명의 활성 학생 데이터가 로드되었습니다.`);
     } catch (err) {
       console.error("학생 데이터 로드 오류:", err);
       setError("학생 데이터를 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
     }
-  }, [selectedDayOfWeek]);
+  }, []);
   
   // 수업 정보 로드
   const loadClassInfo = useCallback(async () => {
     try {
+      console.log("수업 정보 가져오기 시작");
+      
+      // 수업 정보 API 호출
       const classInfoData = await fetchClassInfo();
       
-      if (classInfoData) {
+      console.log("수업 정보 로드 결과:", classInfoData);
+      
+      if (classInfoData && classInfoData.classTimes) {
+        // classTimes 배열이 있는 경우 처리
         setClassInfo(classInfoData);
+        console.log("수업 시간 목록이 설정되었습니다:", classInfoData.classTimes);
       } else {
-        console.error("수업 정보가 유효하지 않습니다.");
+        console.warn("API에서 받은 수업 시간 목록이 없어 기본값을 사용합니다.");
+        setClassInfo({ classTimes: ["15:30", "16:30", "17:30", "18:30"] });
       }
-    } catch (err) {
-      console.error("수업 정보 로드 오류:", err);
+      
+      return true;
+    } catch (error) {
+      console.error("수업 정보를 가져오는 중 오류가 발생했습니다:", error);
+      console.warn("오류로 인해 기본 수업 정보를 계속 사용합니다.");
+      
+      // 기본 수업 시간 설정
+      setClassInfo({ classTimes: ["15:30", "16:30", "17:30", "18:30"] });
+      return false;
     }
   }, []);
   

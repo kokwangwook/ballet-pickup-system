@@ -9,9 +9,12 @@
  */
 export const fetchStudents = async () => {
   try {
-    const response = await fetch('/api/students');
+    // 배포 환경과 개발 환경 모두에서 작동하도록 API 경로 설정
+    const baseUrl = window.location.hostname === 'localhost' ? '' : '/.netlify/functions';
+    const response = await fetch(`${baseUrl}/api/students`);
+    
     if (!response.ok) {
-      throw new Error('학생 데이터를 가져오는데 실패했습니다.');
+      throw new Error(`학생 데이터 가져오기 실패: ${response.status}`);
     }
     const data = await response.json();
     return data;
@@ -102,9 +105,12 @@ export const deleteStudent = async (studentId) => {
  */
 export const fetchLocations = async () => {
   try {
-    const response = await fetch('/api/locations');
+    // 배포 환경과 개발 환경 모두에서 작동하도록 API 경로 설정
+    const baseUrl = window.location.hostname === 'localhost' ? '' : '/.netlify/functions';
+    const response = await fetch(`${baseUrl}/api/locations`);
+    
     if (!response.ok) {
-      throw new Error('위치 데이터를 가져오는데 실패했습니다.');
+      throw new Error(`위치 데이터 가져오기 실패: ${response.status}`);
     }
     const data = await response.json();
     return data;
@@ -120,9 +126,12 @@ export const fetchLocations = async () => {
  */
 export const fetchClassInfo = async () => {
   try {
-    const response = await fetch('/api/class-info');
+    // 배포 환경과 개발 환경 모두에서 작동하도록 API 경로 설정
+    const baseUrl = window.location.hostname === 'localhost' ? '' : '/.netlify/functions';
+    const response = await fetch(`${baseUrl}/api/class-info`);
+    
     if (!response.ok) {
-      throw new Error('수업 정보를 가져오는데 실패했습니다.');
+      throw new Error(`수업 정보 가져오기 실패: ${response.status}`);
     }
     const data = await response.json();
     return data;

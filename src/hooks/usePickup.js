@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { PickupContext } from '../contexts/PickupContext.new';
+import { PickupContext } from '../contexts/PickupContext';
 
 /**
  * 픽업 컨텍스트를 사용하기 위한 커스텀 훅

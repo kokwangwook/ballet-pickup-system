@@ -49,6 +49,46 @@ export const PickupProvider = ({ children }) => {
     '토': { arrival: {}, departure: {} }
   });
   
+  // 시간별 위치 정보 추가
+  const [locations, setLocations] = useState({
+    '15:30': { 
+      locations: {
+        1: "기본 위치 1",
+        2: "기본 위치 2",
+        3: "기본 위치 3"
+      }, 
+      startTime: '15:30', 
+      endTime: '16:30' 
+    },
+    '16:30': { 
+      locations: {
+        1: "기본 위치 1",
+        2: "기본 위치 2",
+        3: "기본 위치 3"
+      }, 
+      startTime: '16:30', 
+      endTime: '17:30' 
+    },
+    '17:30': { 
+      locations: {
+        1: "기본 위치 1",
+        2: "기본 위치 2",
+        3: "기본 위치 3"
+      }, 
+      startTime: '17:30', 
+      endTime: '18:30' 
+    },
+    '18:30': { 
+      locations: {
+        1: "기본 위치 1",
+        2: "기본 위치 2",
+        3: "기본 위치 3"
+      }, 
+      startTime: '18:30', 
+      endTime: '19:30' 
+    }
+  });
+  
   // 등하원 상태
   const [arrivalStatus, setArrivalStatus] = useState({});
   const [departureStatus, setDepartureStatus] = useState({});
@@ -371,7 +411,8 @@ export const PickupProvider = ({ children }) => {
     loadClassInfo,
     getDayName,
     formatDate,
-    calculateTimes: (classTime) => calculateTimes(classTime, classInfo)
+    calculateTimes: (classTime) => calculateTimes(classTime, classInfo),
+    locations
   };
   
   return (

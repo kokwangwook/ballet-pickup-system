@@ -28,6 +28,21 @@ const notion = new Client({
 });
 
 /**
+ * API 경로를 현재 환경에 맞게 구성하는 함수
+ * @param {string} endpoint API 엔드포인트 경로
+ * @returns {string} 완전한 API URL
+ */
+const getApiUrl = (endpoint) => {
+  // Netlify 배포 URL인지 확인
+  const isNetlify = window.location.hostname.includes('netlify.app');
+  
+  // 로컬 개발 환경이면 /api/* 형태로, Netlify 환경이면 /.netlify/functions/api/* 형태로 경로 구성
+  const baseUrl = isNetlify ? '/.netlify/functions' : '';
+  console.log(`Notion API 요청 URL 구성: ${baseUrl}${endpoint} (Netlify: ${isNetlify})`);
+  return `${baseUrl}${endpoint}`;
+};
+
+/**
  * Notion API 서비스 모듈
  * Notion 데이터베이스에서 학생 및 수업 정보를 가져오고 관리하는 함수들을 제공합니다.
  */
@@ -39,7 +54,10 @@ const notion = new Client({
 export const fetchStudentsFromNotion = async () => {
   try {
     console.log("Notion API에서 학생 데이터를 불러오는 중...");
-    const response = await fetch("/api/notion");
+    const apiUrl = getApiUrl('/api/notion');
+    console.log("Notion API 호출 URL:", apiUrl);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       throw new Error(`API 요청 실패: ${response.status}`);
@@ -128,39 +146,38 @@ export const fetchStudentsFromNotion = async () => {
 export const fetchClassInfoFromNotion = async () => {
   try {
     console.log("Notion API에서 수업 정보를 불러오는 중...");
-    const response = await fetch("/api/notion/class-info");
+    const apiUrl = getApiUrl('/api/class-info');
+    console.log("수업 정보 API 호출 URL:", apiUrl);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
-      throw new Error(`API 요청 실패: ${response.status}`);
+      throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
     }
-
+    
     const data = await response.json();
-    
-    if (!data || !data.classInfo) {
-      console.warn("Notion에서 받은 수업 정보가 없습니다.");
-      return getDefaultClassInfo();
-    }
-    
-    return data.classInfo;
+    return data;
   } catch (error) {
-    console.error("Notion에서 수업 정보 가져오기 오류:", error);
+    console.error("노션에서 수업 정보를 가져오는 중 오류가 발생했습니다:", error);
+    // 오류 발생 시 기본 수업 정보 반환
     return getDefaultClassInfo();
   }
 };
 
 /**
- * Notion API를 통해 학생 상태를 업데이트하는 함수
+ * Notion에서 학생 상태를 업데이트하는 함수
  * @param {string} studentId 학생 ID
- * @param {string} statusType 상태 유형 ('등원 상태' 또는 '하원 상태')
- * @param {boolean} status 상태 값
- * @returns {Promise<Object>} 업데이트 결과
+ * @param {string} statusType 상태 유형
+ * @param {any} status 새 상태 값
+ * @returns {Promise<boolean>} 업데이트 성공 여부
  */
 export const updateStudentStatusInNotion = async (studentId, statusType, status) => {
   try {
-    console.log(`Notion API를 통해 학생 ${studentId}의 ${statusType}를 ${status}로 업데이트 중...`);
+    console.log(`학생 ${studentId}의 ${statusType} 상태를 ${status}로 업데이트 중...`);
+    const apiUrl = getApiUrl(`/api/notion/student/${studentId}/status`);
     
-    const response = await fetch(`/api/notion/student/${studentId}/status`, {
-      method: 'PUT',
+    const response = await fetch(apiUrl, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -175,10 +192,10 @@ export const updateStudentStatusInNotion = async (studentId, statusType, status)
     }
     
     const data = await response.json();
-    return data;
+    return data.success;
   } catch (error) {
-    console.error(`Notion에서 학생 상태 업데이트 오류:`, error);
-    throw error;
+    console.error("노션에서 학생 상태를 업데이트하는 중 오류가 발생했습니다:", error);
+    return false;
   }
 };
 

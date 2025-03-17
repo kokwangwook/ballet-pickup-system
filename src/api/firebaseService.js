@@ -4,14 +4,30 @@
  */
 
 /**
+ * API 경로를 현재 환경에 맞게 구성하는 함수
+ * @param {string} endpoint API 엔드포인트 경로
+ * @returns {string} 완전한 API URL
+ */
+const getApiUrl = (endpoint) => {
+  // Netlify 배포 URL인지 확인
+  const isNetlify = window.location.hostname.includes('netlify.app');
+  
+  // 로컬 개발 환경이면 /api/* 형태로, Netlify 환경이면 /.netlify/functions/api/* 형태로 경로 구성
+  const baseUrl = isNetlify ? '/.netlify/functions' : '';
+  console.log(`API 요청 URL 구성: ${baseUrl}${endpoint} (Netlify: ${isNetlify})`);
+  return `${baseUrl}${endpoint}`;
+};
+
+/**
  * 모든 학생 데이터를 가져오는 함수
  * @returns {Promise<Array>} 학생 목록
  */
 export const fetchStudents = async () => {
   try {
-    // 배포 환경과 개발 환경 모두에서 작동하도록 API 경로 설정
-    const baseUrl = window.location.hostname === 'localhost' ? '' : '/.netlify/functions';
-    const response = await fetch(`${baseUrl}/api/students`);
+    const apiUrl = getApiUrl('/api/students');
+    console.log('학생 데이터 API 호출:', apiUrl);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       throw new Error(`학생 데이터 가져오기 실패: ${response.status}`);
@@ -31,7 +47,8 @@ export const fetchStudents = async () => {
  */
 export const addStudent = async (student) => {
   try {
-    const response = await fetch('/api/students', {
+    const apiUrl = getApiUrl('/api/students');
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,7 +76,8 @@ export const addStudent = async (student) => {
  */
 export const updateStudent = async (studentId, studentData) => {
   try {
-    const response = await fetch(`/api/students/${studentId}`, {
+    const apiUrl = getApiUrl(`/api/students/${studentId}`);
+    const response = await fetch(apiUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -86,7 +104,8 @@ export const updateStudent = async (studentId, studentData) => {
  */
 export const deleteStudent = async (studentId) => {
   try {
-    const response = await fetch(`/api/students/${studentId}`, {
+    const apiUrl = getApiUrl(`/api/students/${studentId}`);
+    const response = await fetch(apiUrl, {
       method: 'DELETE',
     });
     
@@ -105,9 +124,10 @@ export const deleteStudent = async (studentId) => {
  */
 export const fetchLocations = async () => {
   try {
-    // 배포 환경과 개발 환경 모두에서 작동하도록 API 경로 설정
-    const baseUrl = window.location.hostname === 'localhost' ? '' : '/.netlify/functions';
-    const response = await fetch(`${baseUrl}/api/locations`);
+    const apiUrl = getApiUrl('/api/locations');
+    console.log('위치 데이터 API 호출:', apiUrl);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       throw new Error(`위치 데이터 가져오기 실패: ${response.status}`);
@@ -126,9 +146,10 @@ export const fetchLocations = async () => {
  */
 export const fetchClassInfo = async () => {
   try {
-    // 배포 환경과 개발 환경 모두에서 작동하도록 API 경로 설정
-    const baseUrl = window.location.hostname === 'localhost' ? '' : '/.netlify/functions';
-    const response = await fetch(`${baseUrl}/api/class-info`);
+    const apiUrl = getApiUrl('/api/class-info');
+    console.log('수업 정보 API 호출:', apiUrl);
+    
+    const response = await fetch(apiUrl);
     
     if (!response.ok) {
       throw new Error(`수업 정보 가져오기 실패: ${response.status}`);

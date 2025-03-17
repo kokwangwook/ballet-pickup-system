@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useRef } from 'react';
 import { fetchStudents, fetchLocations, fetchClassInfo, updateStudent } from '../api/firebaseService';
-import { fetchStudentsFromNotion, updateStudentStatusInNotion } from '../api/notionService';
+// import { fetchStudentsFromNotion, updateStudentStatusInNotion } from '../api/notionService';
 import { getCurrentDayOfWeek, getDayName, formatDate } from '../utils/dateUtils';
 import { parseLocationId } from '../utils/locationUtils';
 import { filterStudentsByDayAndTime, sortStudents } from '../utils/studentUtils';
@@ -259,52 +259,42 @@ export const PickupProvider = ({ children }) => {
   // 등원 상태 변경 함수
   const handleToggleArrivalStatus = async (studentId) => {
     try {
-      // 이미 처리 중인 학생인지 확인
-      if (processingStatus.current.includes(studentId)) {
-        console.warn(`학생 ID ${studentId}의 등원 상태 변경이 이미 처리 중입니다.`);
-        return;
-      }
+      console.log(`등원 상태 변경 요청: 학생 ID ${studentId}`);
       
-      // 처리 중인 학생 목록에 추가
-      processingStatus.current.push(studentId);
+      // 상태 업데이트 함수 호출
+      const updatedStatus = await toggleArrivalStatus(
+        studentId,
+        arrivalStatus,
+        false, // 노션 API 사용하지 않음
+        students
+      );
       
-      const updatedStatus = await toggleArrivalStatus(studentId, arrivalStatus, useNotion, students);
+      // 상태 업데이트
       setArrivalStatus(updatedStatus);
-      
-      // 처리 완료 후 목록에서 제거
-      processingStatus.current = processingStatus.current.filter(id => id !== studentId);
-    } catch (err) {
-      console.error("등원 상태 변경 오류:", err);
-      setError(err.message || "등원 상태 변경 중 오류가 발생했습니다.");
-      
-      // 오류 발생 시에도 처리 중인 목록에서 제거
-      processingStatus.current = processingStatus.current.filter(id => id !== studentId);
+    } catch (error) {
+      console.error('등원 상태 변경 오류:', error);
+      setError('등원 상태를 변경하는 중 오류가 발생했습니다.');
     }
   };
   
   // 하원 상태 변경 함수
   const handleToggleDepartureStatus = async (studentId) => {
     try {
-      // 이미 처리 중인 학생인지 확인
-      if (processingStatus.current.includes(studentId)) {
-        console.warn(`학생 ID ${studentId}의 하원 상태 변경이 이미 처리 중입니다.`);
-        return;
-      }
+      console.log(`하원 상태 변경 요청: 학생 ID ${studentId}`);
       
-      // 처리 중인 학생 목록에 추가
-      processingStatus.current.push(studentId);
+      // 상태 업데이트 함수 호출
+      const updatedStatus = await toggleDepartureStatus(
+        studentId,
+        departureStatus,
+        false, // 노션 API 사용하지 않음
+        students
+      );
       
-      const updatedStatus = await toggleDepartureStatus(studentId, departureStatus, useNotion, students);
+      // 상태 업데이트
       setDepartureStatus(updatedStatus);
-      
-      // 처리 완료 후 목록에서 제거
-      processingStatus.current = processingStatus.current.filter(id => id !== studentId);
-    } catch (err) {
-      console.error("하원 상태 변경 오류:", err);
-      setError(err.message || "하원 상태 변경 중 오류가 발생했습니다.");
-      
-      // 오류 발생 시에도 처리 중인 목록에서 제거
-      processingStatus.current = processingStatus.current.filter(id => id !== studentId);
+    } catch (error) {
+      console.error('하원 상태 변경 오류:', error);
+      setError('하원 상태를 변경하는 중 오류가 발생했습니다.');
     }
   };
   

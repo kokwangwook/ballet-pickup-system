@@ -64,67 +64,18 @@ export const fetchStudents = async () => {
   try {
     console.log('Firebase Firestore에서 학생 데이터 가져오기 시도');
     
-    // 먼저 Firestore에서 직접 데이터 가져오기 시도
-    try {
-      const studentsCollection = collection(db, 'students');
-      const studentsSnapshot = await getDocs(studentsCollection);
-      const studentsList = studentsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      console.log('Firebase Firestore에서 학생 데이터 가져오기 성공:', studentsList.length);
-      return studentsList;
-    } catch (firestoreError) {
-      console.error('Firebase Firestore 접근 오류:', firestoreError);
-      
-      // Firestore 접근 실패 시 API 호출 시도
-      const baseUrl = getApiBaseUrl();
-      console.log(`API 호출 URL: ${baseUrl}/students`);
-      
-      const response = await fetch(`${baseUrl}/students`);
-      if (!response.ok) {
-        throw new Error(`학생 데이터 가져오기 실패: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data.students || [];
-    }
-  } catch (error) {
-    console.error('학생 데이터 가져오기 오류:', error);
+    const studentsCollection = collection(db, 'students');
+    const studentsSnapshot = await getDocs(studentsCollection);
+    const studentsList = studentsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     
-    // 모든 방법 실패 시 기본 데이터 반환
-    console.log('기본 학생 데이터 사용');
-    return [
-      {
-        id: 'default_student_1',
-        name: '김철수',
-        grade: '3',
-        class: 'A',
-        status: 'waiting',
-        contactInfo: {
-          motherPhone: '010-1234-5678'
-        },
-        locations: {
-          arrival: 'location_1',
-          departure: 'location_2'
-        }
-      },
-      {
-        id: 'default_student_2',
-        name: '이영희',
-        grade: '2',
-        class: 'B',
-        status: 'picked_up',
-        contactInfo: {
-          motherPhone: '010-2345-6789'
-        },
-        locations: {
-          arrival: 'location_3',
-          departure: 'location_3'
-        }
-      }
-    ];
+    console.log('Firebase Firestore에서 학생 데이터 가져오기 성공:', studentsList.length);
+    return studentsList;
+  } catch (error) {
+    console.error('Firebase Firestore 학생 데이터 접근 오류:', error);
+    throw error; // 오류 전파 - 더미 데이터를 사용하지 않음
   }
 };
 
@@ -214,91 +165,18 @@ export const fetchLocations = async () => {
   try {
     console.log('Firebase Firestore에서 위치 데이터 가져오기 시도');
     
-    // 먼저 Firestore에서 직접 데이터 가져오기 시도
-    try {
-      const locationsCollection = collection(db, 'locations');
-      const locationsSnapshot = await getDocs(locationsCollection);
-      const locationsList = locationsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      console.log('Firebase Firestore에서 위치 데이터 가져오기 성공:', locationsList.length);
-      return { locations: locationsList };
-    } catch (firestoreError) {
-      console.error('Firebase Firestore 위치 데이터 접근 오류:', firestoreError);
-      
-      // Firestore 접근 실패 시 API 호출 시도
-      const baseUrl = getApiBaseUrl();
-      console.log(`위치 데이터 API 호출 URL: ${baseUrl}/locations`);
-      
-      const response = await fetch(`${baseUrl}/locations`);
-      if (!response.ok) {
-        throw new Error(`위치 데이터 가져오기 실패: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    }
-  } catch (error) {
-    console.error('위치 데이터 가져오기 오류:', error);
+    const locationsCollection = collection(db, 'locations');
+    const locationsSnapshot = await getDocs(locationsCollection);
+    const locationsList = locationsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     
-    // 모든 방법 실패 시 기본 데이터 반환
-    console.log('기본 위치 데이터 사용');
-    return {
-      locations: [
-        {
-          id: "location_1",
-          name: "빛누리초등학교",
-          address: "나주시 빛가람동 빛누리로 25",
-          type: "school",
-          coordinates: {
-            lat: 35.0175,
-            lng: 126.7873
-          }
-        },
-        {
-          id: "location_2",
-          name: "에시앙 아파트",
-          address: "나주시 빛가람동 에시앙로 123",
-          type: "apartment",
-          coordinates: {
-            lat: 35.0159,
-            lng: 126.7892
-          }
-        },
-        {
-          id: "location_3",
-          name: "중흥아파트",
-          address: "나주시 빛가람동 중흥로 456",
-          type: "apartment",
-          coordinates: {
-            lat: 35.0195,
-            lng: 126.7845
-          }
-        },
-        {
-          id: "location_4",
-          name: "빛가람초등학교",
-          address: "나주시 빛가람동 빛가람로 78",
-          type: "school",
-          coordinates: {
-            lat: 35.0210,
-            lng: 126.7830
-          }
-        },
-        {
-          id: "location_5",
-          name: "한빛유치원",
-          address: "나주시 빛가람동 한빛로 90",
-          type: "kindergarten",
-          coordinates: {
-            lat: 35.0185,
-            lng: 126.7860
-          }
-        }
-      ]
-    };
+    console.log('Firebase Firestore에서 위치 데이터 가져오기 성공:', locationsList.length);
+    return { locations: locationsList };
+  } catch (error) {
+    console.error('Firebase Firestore 위치 데이터 접근 오류:', error);
+    throw error; // 오류 전파 - 더미 데이터를 사용하지 않음
   }
 };
 
@@ -310,36 +188,33 @@ export const fetchClassInfo = async () => {
   try {
     console.log('Firebase Firestore에서 수업 정보 가져오기 시도');
     
-    // 먼저 Firestore에서 직접 데이터 가져오기 시도
-    try {
-      const classesCollection = collection(db, 'classes');
-      const classesSnapshot = await getDocs(classesCollection);
-      const classesList = classesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      console.log('Firebase Firestore에서 수업 정보 가져오기 성공:', classesList.length);
-      return { classes: classesList };
-    } catch (firestoreError) {
-      console.error('Firebase Firestore 수업 정보 접근 오류:', firestoreError);
-      
-      // Firestore 접근 실패 시 API 호출 시도
-      const baseUrl = getApiBaseUrl();
-      console.log(`수업 정보 API 호출 URL: ${baseUrl}/class-info`);
-      
-      const response = await fetch(`${baseUrl}/class-info`);
-      if (!response.ok) {
-        throw new Error(`수업 정보 가져오기 실패: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    }
-  } catch (error) {
-    console.error('수업 정보 가져오기 오류:', error);
+    const classesCollection = collection(db, 'classes');
+    const classesSnapshot = await getDocs(classesCollection);
+    const classesList = classesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
     
-    // 모든 방법 실패 시 기본 데이터 반환
+    console.log('Firebase Firestore에서 수업 정보 가져오기 성공:', classesList.length);
+    
+    // 시간별 정렬
+    classesList.sort((a, b) => {
+      const timeA = a.startTime || '00:00';
+      const timeB = b.startTime || '00:00';
+      return timeA.localeCompare(timeB);
+    });
+    
+    // classTimes 배열 추출
+    const classTimes = classesList.map(cls => cls.startTime).filter(time => time);
+    
+    return { 
+      classes: classesList,
+      classTimes: classTimes.length > 0 ? classTimes : ["15:00", "16:00", "17:00", "18:00"]
+    };
+  } catch (error) {
+    console.error('Firebase Firestore 수업 정보 접근 오류:', error);
+    
+    // 기본 데이터 반환
     console.log('기본 수업 정보 사용');
     return {
       classes: [
@@ -373,7 +248,8 @@ export const fetchClassInfo = async () => {
           room: "A",
           maxStudents: 6
         }
-      ]
+      ],
+      classTimes: ["15:00", "16:00", "17:00"]
     };
   }
 }; 

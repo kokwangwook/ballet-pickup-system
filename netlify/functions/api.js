@@ -5,7 +5,14 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-app.use(cors());
+
+// CORS 설정 강화 - 모든 도메인 허용
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 // 데이터 파일 경로

@@ -9,21 +9,25 @@
  * @returns {string} 완전한 API URL
  */
 const getApiUrl = (endpoint) => {
-  // 현재 URL 확인
+  // 현재 URL과 호스트명 로깅
   const currentUrl = window.location.href;
   const hostname = window.location.hostname;
   
   console.log('현재 URL:', currentUrl);
   console.log('호스트명:', hostname);
   
-  // Netlify 배포 URL인지 명시적으로 확인
-  const isNetlify = hostname.includes('netlify.app') || hostname.includes('netlify.com');
+  // 로컬 환경인지 확인 (확실한 방법으로)
+  const isLocalhost = 
+    hostname === 'localhost' || 
+    hostname === '127.0.0.1' || 
+    hostname.startsWith('192.168.') ||
+    hostname.includes('.local');
   
-  // 로컬 개발 환경이면 /api/* 형태로, Netlify 환경이면 /.netlify/functions/api/* 형태로 경로 구성
-  const baseUrl = isNetlify ? '/.netlify/functions' : '';
+  // 로컬 개발 환경이면 /api/* 형태로, 그 외에는 모두 /.netlify/functions/api 형태로 구성
+  const baseUrl = isLocalhost ? '' : '/.netlify/functions';
   
   const fullUrl = `${baseUrl}${endpoint}`;
-  console.log(`API 요청 URL 구성: ${fullUrl} (Netlify 환경: ${isNetlify})`);
+  console.log(`API 요청 URL 구성: ${fullUrl} (로컬 환경: ${isLocalhost})`);
   
   return fullUrl;
 };

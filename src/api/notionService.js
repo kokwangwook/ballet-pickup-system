@@ -27,6 +27,24 @@ const notion = new Client({
   }
 });
 
+// API 기본 URL 설정
+const getApiBaseUrl = () => {
+  const hostname = window.location.hostname;
+  
+  // 개발 환경인 경우
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return '/api';
+  }
+  
+  // Netlify 배포 환경인 경우
+  if (hostname.includes('netlify.app')) {
+    return '/.netlify/functions/api';
+  }
+  
+  // 기타 프로덕션 환경의 경우
+  return '/api';
+};
+
 /**
  * API 경로를 현재 환경에 맞게 구성하는 함수
  * @param {string} endpoint API 엔드포인트 경로
@@ -157,13 +175,12 @@ export const fetchStudentsFromNotion = async () => {
  * Notion API에서 수업 정보를 가져오는 함수
  * @returns {Promise<Object>} 수업 정보
  */
-export const fetchClassInfoFromNotion = async () => {
+export const fetchClassInfo = async () => {
   try {
-    console.log("Notion API에서 수업 정보를 불러오는 중...");
-    const apiUrl = getApiUrl('/api/class-info');
-    console.log("수업 정보 API 호출 URL:", apiUrl);
+    const baseUrl = getApiBaseUrl();
+    console.log(`클래스 정보 API 호출 URL: ${baseUrl}/class-info`);
     
-    const response = await fetch(apiUrl);
+    const response = await fetch(`${baseUrl}/class-info`);
     
     if (!response.ok) {
       throw new Error(`서버 응답이 올바르지 않습니다. 상태 코드: ${response.status}`);
@@ -172,9 +189,8 @@ export const fetchClassInfoFromNotion = async () => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error("노션에서 수업 정보를 가져오는 중 오류가 발생했습니다:", error);
-    // 오류 발생 시 기본 수업 정보 반환
-    return getDefaultClassInfo();
+    console.error('노션에서 수업 정보를 가져오는 중 오류가 발생했습니다:', error);
+    throw error;
   }
 };
 
@@ -261,5 +277,5 @@ function getDefaultClassInfo() {
 export default {
   fetchStudentsFromNotion,
   updateStudentStatusInNotion,
-  fetchClassInfoFromNotion
+  fetchClassInfo
 }; 

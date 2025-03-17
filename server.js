@@ -138,8 +138,16 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
 }
 
 // CORS 설정
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://ballet-pickup-system.netlify.app', 'https://ballet-pickup-system-zgdt.vercel.app'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Vercel 환경 감지
+const isVercel = process.env.VERCEL === '1';
 
 // 정적 파일 제공 (빌드된 React 앱)
 app.use(express.static(path.join(__dirname, 'build')));
@@ -259,144 +267,79 @@ function normalizeStudentTimes(student) {
   return student;
 }
 
-// 학생 데이터 가져오기 API 엔드포인트
-app.get('/api/students', async (req, res) => {
-  try {
-    let students = [];
-    
-    // Firestore가 초기화되었는지 확인
-    if (admin.apps.length && db) {
-      console.log('Firestore에서 학생 데이터 가져오기 시도...');
-      const studentsSnapshot = await db.collection('students').get();
+// API 경로 설정
+const setupApiRoutes = () => {
+  console.log('API 경로 설정 중...');
+  
+  // 기본 API 경로
+  const apiRouter = express.Router();
+  
+  // 학생 데이터 가져오기 (GET /api/students)
+  apiRouter.get('/students', async (req, res) => {
+    try {
+      console.log('학생 데이터 요청 받음');
       
-      if (!studentsSnapshot.empty) {
-        students = studentsSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
+      let studentsData;
+      
+      // Firebase에서 데이터 가져오기 시도
+      if (firebaseInitialized && db) {
+        console.log('Firebase에서 학생 데이터 가져오기 시도');
+        
+        try {
+          const studentsCollection = db.collection('students');
+          const studentsSnapshot = await studentsCollection.get();
+          studentsData = studentsSnapshot.docs.map(doc => ({
             id: doc.id,
-            ...data
-          };
-        });
-        console.log(`Firestore에서 ${students.length}명의 학생 데이터를 가져왔습니다.`);
-        
-        // 중복 ID 확인 및 수정
-        const idMap = new Map();
-        const updatedStudents = [];
-        
-        students.forEach(student => {
-          if (idMap.has(student.id)) {
-            // 중복된 ID가 있는 경우 새 ID 생성
-            console.log(`중복된 ID 발견: ${student.id}, 학생 이름: ${student.name}`);
-            const newId = `${student.id}_${Date.now()}`;
-            console.log(`새 ID 할당: ${newId}`);
-            
-            // Firestore에 새 ID로 문서 생성
-            db.collection('students').doc(newId).set({
-              ...student,
-              id: newId
-            }).then(() => {
-              console.log(`학생 ${student.name}의 데이터가 새 ID ${newId}로 복제되었습니다.`);
-            }).catch(err => {
-              console.error(`학생 데이터 복제 중 오류 발생: ${err}`);
-            });
-            
-            // 기존 문서 삭제는 하지 않음 (데이터 손실 방지)
-            
-            // 업데이트된 학생 정보 추가
-            updatedStudents.push({
-              ...student,
-              id: newId
-            });
-          } else {
-            idMap.set(student.id, true);
-            updatedStudents.push(student);
-          }
-        });
-        
-        // 업데이트된 학생 목록 사용
-        students = updatedStudents;
-        
-        // 학생 데이터 정규화
-        students = students.map(student => normalizeStudentTimes(student));
-      } else {
-        console.log('Firestore에 학생 데이터가 없습니다. 로컬 JSON 파일에서 가져옵니다.');
-        // 로컬 JSON 파일에서 학생 데이터 가져오기
-        const studentsData = fs.readFileSync('./data/students.json', 'utf8');
-        students = JSON.parse(studentsData);
-        
-        // 중복 ID 확인 및 수정
-        const idMap = new Map();
-        const updatedStudents = [];
-        
-        students.forEach(student => {
-          if (idMap.has(student.id)) {
-            // 중복된 ID가 있는 경우 새 ID 생성
-            console.log(`중복된 ID 발견: ${student.id}, 학생 이름: ${student.name}`);
-            const newId = `${student.id}_${Date.now()}`;
-            console.log(`새 ID 할당: ${newId}`);
-            
-            // 업데이트된 학생 정보 추가
-            updatedStudents.push({
-              ...student,
-              id: newId
-            });
-          } else {
-            idMap.set(student.id, true);
-            updatedStudents.push(student);
-          }
-        });
-        
-        // 업데이트된 학생 목록 사용
-        students = updatedStudents;
-        
-        // 학생 데이터 정규화
-        students = students.map(student => normalizeStudentTimes(student));
-      }
-    } else {
-      console.log('Firestore가 초기화되지 않았습니다. 로컬 JSON 파일에서 학생 데이터를 가져옵니다.');
-      // 로컬 JSON 파일에서 학생 데이터 가져오기
-      const studentsData = fs.readFileSync('./data/students.json', 'utf8');
-      students = JSON.parse(studentsData);
-      
-      // 중복 ID 확인 및 수정
-      const idMap = new Map();
-      const updatedStudents = [];
-      
-      students.forEach(student => {
-        if (idMap.has(student.id)) {
-          // 중복된 ID가 있는 경우 새 ID 생성
-          console.log(`중복된 ID 발견: ${student.id}, 학생 이름: ${student.name}`);
-          const newId = `${student.id}_${Date.now()}`;
-          console.log(`새 ID 할당: ${newId}`);
+            ...doc.data()
+          }));
           
-          // 업데이트된 학생 정보 추가
-          updatedStudents.push({
-            ...student,
-            id: newId
-          });
-        } else {
-          idMap.set(student.id, true);
-          updatedStudents.push(student);
+          console.log(`Firebase에서 ${studentsData.length}명의 학생 데이터를 가져왔습니다.`);
+        } catch (firebaseError) {
+          console.error('Firebase 학생 데이터 접근 오류:', firebaseError);
+          console.log('로컬 JSON 파일로 폴백합니다.');
+          studentsData = null;
         }
-      });
+      }
       
-      // 업데이트된 학생 목록 사용
-      students = updatedStudents;
+      // Firebase에서 가져오기 실패하면 로컬 JSON 파일 사용
+      if (!studentsData) {
+        console.log('로컬 JSON 파일에서 학생 데이터 읽기 시도');
+        
+        try {
+          // 로컬 파일에서 학생 데이터 읽기
+          studentsData = readStudentsFromFile();
+          console.log(`로컬 파일에서 ${studentsData.length}명의 학생 데이터를 읽었습니다.`);
+        } catch (fileError) {
+          console.error('학생 데이터 파일 읽기 실패:', fileError);
+          // 파일 읽기 실패 시 빈 배열 반환
+          studentsData = [];
+        }
+      }
       
-      // 학생 데이터 정규화
-      students = students.map(student => normalizeStudentTimes(student));
+      res.json(studentsData);
+    } catch (error) {
+      console.error('학생 데이터 처리 중 오류:', error);
+      res.status(500).json({ error: '학생 데이터를 가져오는 중 오류가 발생했습니다.' });
     }
-    
-    // 허용된 시간대만 필터링
-    const allowedTimes = ['15:30', '16:30', '17:30', '18:30'];
-    
-    // 응답 전송
-    res.json(students);
-  } catch (error) {
-    console.error('학생 데이터를 가져오는 중 오류가 발생했습니다:', error);
-    res.status(500).json({ error: '학생 데이터를 가져오는 중 오류가 발생했습니다.' });
+  });
+  
+  // ... 다른 API 라우트 ...
+  
+  // API 경로 등록
+  if (isVercel) {
+    // Vercel 환경에서는 /api 경로로 직접 라우팅
+    app.use('/api', apiRouter);
+    console.log('Vercel 환경에서 /api 경로 설정됨');
+  } else {
+    // 그 외 환경에서는 /.netlify/functions/api 경로와 /api 경로 모두 지원
+    app.use('/.netlify/functions/api', apiRouter);
+    app.use('/api', apiRouter);
+    console.log('일반 환경에서 API 경로 설정됨');
   }
-});
+};
+
+// API 경로 설정 실행
+setupApiRoutes();
 
 // 수업 정보 가져오기
 app.get('/api/class-info', (req, res) => {

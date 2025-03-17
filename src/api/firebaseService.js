@@ -26,11 +26,25 @@ const getApiUrl = (endpoint) => {
     hostname.startsWith('192.168.') ||
     hostname.includes('.local');
   
-  // 로컬 개발 환경이면 /api/* 형태로, 그 외에는 모두 /.netlify/functions/api 형태로 구성
-  const baseUrl = isLocalhost ? '' : '/.netlify/functions';
+  // Vercel 배포 환경인지 확인
+  const isVercel = hostname.includes('vercel.app');
+  
+  // API 경로 구성
+  let baseUrl = '';
+  
+  if (isLocalhost) {
+    // 로컬 개발 환경
+    baseUrl = '';
+  } else if (isVercel) {
+    // Vercel 배포 환경
+    baseUrl = '/api';
+  } else {
+    // Netlify 또는 기타 환경
+    baseUrl = '/.netlify/functions/api';
+  }
   
   const fullUrl = `${baseUrl}${endpoint}`;
-  console.log(`API 요청 URL 구성: ${fullUrl} (로컬 환경: ${isLocalhost})`);
+  console.log(`API 요청 URL 구성: ${fullUrl} (로컬 환경: ${isLocalhost}, Vercel 환경: ${isVercel})`);
   
   return fullUrl;
 };
